@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/Microsoft/hcsshim"
+	"github.com/Sirupsen/logrus"
 	"github.com/docker/go-plugins-helpers/network"
 	"github.com/docker/go-plugins-helpers/sdk"
 )
@@ -47,7 +48,7 @@ func (dummyNetworkDriver) CreateNetwork(network *network.CreateNetworkRequest) e
 
 	networkObject := &hcsshim.HNSNetwork{
 		Id:   network.NetworkID,
-		Name: "TestNetwork",
+		Name: "random",
 	}
 
 	request, err := json.Marshal(networkObject)
@@ -55,6 +56,8 @@ func (dummyNetworkDriver) CreateNetwork(network *network.CreateNetworkRequest) e
 	if err != nil {
 		return err
 	}
+
+	logrus.Println("Request", request)
 
 	return nil
 }

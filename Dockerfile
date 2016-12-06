@@ -6,9 +6,17 @@
 # Steps to build (similar to instructions in Dockerfile.windows):
 # >> git clone https://github.com/codilime/contrail-windows-docker c:\go\src\github.com\codilime/contrail-windows-docker
 # >> cd c:\go\src\github.com\codilime/contrail-windows-docker
-# >> docker build -t driverbuildimage -f Dockerfile .
-# >> docker run --name remotedriver driverbuildimage sh -c 'cd /c/go/bin; go build github.com/codilime/contrail-windows-docker'
-# >> docker cp remotedriver:c:\go\bin\docker-windows-driver.exe OUTPUT_PATH
+# >> docker build -t driverbuildimage .
+# >> docker run --rm -v <OUTPUT_DIR>:C:\output -v <SOURCE_DIR>:C:\go\src\github.com\codilime\contrail-windows-docker driverbuildimage
 
 FROM nativebuildimage
-COPY . /go/src/github.com/codilime/contrail-windows-docker
+
+RUN mkdir C:\output
+
+COPY generate.ps1 C:/generate.ps1
+
+VOLUME 'C:/go/src/github.com/codilime/contrail-windows-docker'
+VOLUME 'C:/output'
+
+# Workaround, because GO Panics when following symlinks...
+CMD ['C:\generate.ps1']
