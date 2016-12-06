@@ -1,0 +1,61 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "K+pGIEJLDeWwQB/yw9dXyJV04NE=",
+			"path": "github.com/Microsoft/go-winio",
+			"revision": "24a3e3d3fc7451805e09d11e11e95d9a0a4f205e",
+			"revisionTime": "2016-11-21T22:01:10Z"
+		},
+		{
+			"checksumSHA1": "2PLnmCxSkUzrNe/6VNfWEcXA3cA=",
+			"path": "github.com/Microsoft/hcsshim",
+			"revision": "d327ca738085de7d617aa1df16d98fe7a64c2455",
+			"revisionTime": "2016-11-21T19:31:14Z"
+		},
+		{
+			"checksumSHA1": "ZS4GSDWE8SdS/ZapKNYQpS3+o+w=",
+			"path": "github.com/Sirupsen/logrus",
+			"revision": "881bee4e20a5d11a6a88a5667c6f292072ac1963",
+			"revisionTime": "2016-12-02T02:35:07Z"
+		},
+		{
+			"checksumSHA1": "J0IlElpHd7eJH/jJhzLo0Muox0E=",
+			"path": "github.com/docker/go-connections/sockets",
+			"revision": "4ccf312bf1d35e5dbda654e57a9be4c3f3cd0366",
+			"revisionTime": "2016-11-15T16:18:49Z"
+		},
+		{
+			"checksumSHA1": "jSjfFHlVgzL5SmRtIwj6G8hDLzQ=",
+			"path": "github.com/docker/go-plugins-helpers/network",
+			"revision": "77bfeec724ac5ae33f6a820c7ee6c98301b5a121",
+			"revisionTime": "2016-11-23T20:57:46Z"
+		},
+		{
+			"checksumSHA1": "j84/os9YEKO4m0RsM5RNSsZt/v4=",
+			"path": "github.com/docker/go-plugins-helpers/sdk",
+			"revision": "77bfeec724ac5ae33f6a820c7ee6c98301b5a121",
+			"revisionTime": "2016-11-23T20:57:46Z"
+		},
+		{
+			"checksumSHA1": "LvdVRE0FqdR68SvVpRkHs1rxhcA=",
+			"path": "golang.org/x/net/proxy",
+			"revision": "4a1c855a052c2bad0e019ccfe8193a33d77adf5e",
+			"revisionTime": "2016-12-06T00:22:42Z"
+		},
+		{
+			"checksumSHA1": "8SH0adTcQlA+W5dzqiQ3Hft2VXg=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "478fcf54317e52ab69f40bb4c7a1520288d7f7ea",
+			"revisionTime": "2016-12-05T15:46:50Z"
+		},
+		{
+			"checksumSHA1": "kQB2wRB3twjUp615F6zEwGHjNe0=",
+			"path": "golang.org/x/sys/windows",
+			"revision": "478fcf54317e52ab69f40bb4c7a1520288d7f7ea",
+			"revisionTime": "2016-12-05T15:46:50Z"
+		}
+	],
+	"rootPath": "github.com/codilime/contrail-windows-docker"
+}
