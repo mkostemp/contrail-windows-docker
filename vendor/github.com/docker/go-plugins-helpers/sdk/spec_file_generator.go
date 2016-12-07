@@ -7,14 +7,14 @@ import (
 	"runtime"
 )
 
-type Proto string
+type protocol string
 
 const (
-	ProtoTCP Proto = "tcp"
-	ProtoNamedPipe Proto = "npipe"
+	protoTCP       protocol = "tcp"
+	protoNamedPipe protocol = "npipe"
 )
 
-func writeSpec(name, address string, proto Proto) (string, error) {
+func writeSpec(name, address string, proto protocol) (string, error) {
 
 	var pluginSpecDir string
 	if runtime.GOOS == "windows" {

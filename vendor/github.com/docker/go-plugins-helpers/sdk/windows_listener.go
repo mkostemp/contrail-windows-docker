@@ -5,7 +5,6 @@ package sdk
 import (
 	"net"
 
-	"github.com/docker/go-connections/sockets"
 	"github.com/Microsoft/go-winio"
 )
 
@@ -17,11 +16,11 @@ func newWindowsListener(address, pluginName string, pipeConfig *WindowsPipeConfi
 			InputBufferSize:    pipeConfig.InBufferSize,
 			OutputBufferSize:   pipeConfig.OutBufferSize,
 		}
-		listener, err := sockets.NewWindowsSocket(address, &winioPipeConfig)
+		listener, err := winio.ListenPipe(address, &winioPipeConfig)
 		if err != nil {
 			return nil, "", "", err
 		}
-		spec, err := writeSpec(pluginName, listener.Addr().String(), ProtoNamedPipe)
+		spec, err := writeSpec(pluginName, listener.Addr().String(), protoNamedPipe)
 		if err != nil {
 			return nil, "", "", err
 		}
