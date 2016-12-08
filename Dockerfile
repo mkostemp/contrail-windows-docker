@@ -7,7 +7,7 @@
 # >> git clone https://github.com/codilime/contrail-windows-docker c:\go\src\github.com\codilime/contrail-windows-docker
 # >> cd c:\go\src\github.com\codilime/contrail-windows-docker
 # >> docker build -t driverbuildimage .
-# >> docker run --rm -v <OUTPUT_DIR>:C:\output -v <SOURCE_DIR>:C:\go\src\github.com\codilime\contrail-windows-docker driverbuildimage
+# >> docker run --entrypoint cmd --rm -v <OUTPUT_DIR>:C:\output -v <SOURCE_DIR>:C:\go\src\github.com\codilime\contrail-windows-docker driverbuildimage /c powershell C:\generate.ps1
 
 FROM nativebuildimage
 
@@ -18,5 +18,6 @@ COPY generate.ps1 C:/generate.ps1
 VOLUME 'C:/go/src/github.com/codilime/contrail-windows-docker'
 VOLUME 'C:/output'
 
+ENTRYPOINT "cmd"
 # Workaround, because GO Panics when following symlinks...
-CMD ['C:\generate.ps1']
+CMD ['/c', 'powershell', 'C:\generate.ps1']
