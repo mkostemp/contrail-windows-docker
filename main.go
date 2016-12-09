@@ -13,10 +13,15 @@ import (
 	"github.com/docker/go-plugins-helpers/sdk"
 )
 
+const (
+	// DRIVERNAME is name of the driver that is to be specified during docker network creation
+	DRIVERNAME = "Contrail"
+)
+
 type dummyNetworkDriver struct{}
 
 func main() {
-	d := dummyNetworkDriver{}
+	d := &dummyNetworkDriver{}
 	h := network.NewHandler(d)
 
 	config := sdk.WindowsPipeConfig{
@@ -26,80 +31,88 @@ func main() {
 		OutBufferSize:      4096,
 	}
 
-	h.ServeWindows("//./pipe/testpipe", "testpipe", &config)
+	h.ServeWindows("//./pipe/"+DRIVERNAME, DRIVERNAME, &config)
 }
 
-func (dummyNetworkDriver) GetCapabilities() (*network.CapabilitiesResponse, error) {
-	fmt.Println("=== GetCapabilities")
+func (d *dummyNetworkDriver) GetCapabilities() (*network.CapabilitiesResponse, error) {
+	logrus.Println("=== GetCapabilities")
 	r := &network.CapabilitiesResponse{}
 	r.Scope = network.LocalScope
 	return r, nil
 }
 
-func (dummyNetworkDriver) CreateNetwork(req *network.CreateNetworkRequest) error {
-	fmt.Println("=== CreateNetwork")
-	fmt.Println("network.NetworkID =", req.NetworkID)
-	fmt.Println(req)
-	fmt.Println("IPv4:")
+func (d *dummyNetworkDriver) CreateNetwork(req *network.CreateNetworkRequest) error {
+	logrus.Println("=== CreateNetwork")
+	logrus.Println("network.NetworkID =", req.NetworkID)
+	logrus.Println(req)
+	logrus.Println("IPv4:")
 	for _, n := range req.IPv4Data {
-		fmt.Println(n)
+		logrus.Println(n)
 	}
-	fmt.Println("IPv6:")
+	logrus.Println("IPv6:")
 	for _, n := range req.IPv6Data {
-		fmt.Println(n)
+		logrus.Println(n)
 	}
-	fmt.Println("options:")
+	logrus.Println("options:")
 	for k, v := range req.Options {
 		fmt.Printf("%v: %v\n", k, v)
 	}
 
-	network := req
+	subnets := []hcsshim.Subnet{}
+	s := hcsshim.Subnet{
+		AddressPrefix:  req.IPv4Data[0].Pool,
+		GatewayAddress: req.IPv4Data[0].Gateway,
+	}
+	subnets = append(subnets, s)
 
-	genericOptions := network.Options["com.docker.network.generic"].(map[string]interface{})
+	logrus.Println("subnets", subnets)
 
-	vSwitch := genericOptions["vswitch"].(string)
-
-	fmt.Println("VSwitch =", vSwitch)
-
-	networkObject := &hcsshim.HNSNetwork{
-		Id:   network.NetworkID,
-		Name: "random",
+	configuration := &hcsshim.HNSNetwork{
+		Name:    req.NetworkID,
+		Type:    "transparent",
+		Subnets: subnets,
 	}
 
-	request, err := json.Marshal(networkObject)
-
+	request, err := json.Marshal(configuration)
 	if err != nil {
 		return err
 	}
+	logrus.Println("[HNS] Request ", string(request))
 
-	logrus.Println("Request", request)
+	response, err := hcsshim.HNSNetworkRequest("POST", "", string(request))
+	if err != nil {
+		logrus.Println("[HNS] Error ", err)
+		return err
+	}
+	logrus.Println("[HNS] Response ", response)
+
 	return nil
 }
 
-func (dummyNetworkDriver) AllocateNetwork(req *network.AllocateNetworkRequest) (*network.AllocateNetworkResponse, error) {
-	fmt.Println("=== AllocateNetwork")
-	fmt.Println(req)
+func (d *dummyNetworkDriver) AllocateNetwork(req *network.AllocateNetworkRequest) (*network.AllocateNetworkResponse, error) {
+	logrus.Println("=== AllocateNetwork")
+	logrus.Println(req)
 	r := &network.AllocateNetworkResponse{}
 	return r, nil
 }
 
-func (dummyNetworkDriver) DeleteNetwork(req *network.DeleteNetworkRequest) error {
-	fmt.Println("=== DeleteNetwork")
-	fmt.Println(req)
+func (d *dummyNetworkDriver) DeleteNetwork(req *network.DeleteNetworkRequest) error {
+	logrus.Println("=== DeleteNetwork")
+	logrus.Println(req)
 	return nil
 }
 
-func (dummyNetworkDriver) FreeNetwork(req *network.FreeNetworkRequest) error {
-	fmt.Println("=== FreeNetwork")
-	fmt.Println(req)
+func (d *dummyNetworkDriver) FreeNetwork(req *network.FreeNetworkRequest) error {
+	logrus.Println("=== FreeNetwork")
+	logrus.Println(req)
 	return nil
 }
 
-func (dummyNetworkDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*network.CreateEndpointResponse, error) {
-	fmt.Println("=== CreateEndpoint")
-	fmt.Println(req)
-	fmt.Println(req.Interface)
-	fmt.Println("options:")
+func (d *dummyNetworkDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*network.CreateEndpointResponse, error) {
+	logrus.Println("=== CreateEndpoint")
+	logrus.Println(req)
+	logrus.Println(req.Interface)
+	logrus.Println("options:")
 	for k, v := range req.Options {
 		fmt.Printf("%v: %v\n", k, v)
 	}
@@ -107,23 +120,23 @@ func (dummyNetworkDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*n
 	return r, nil
 }
 
-func (dummyNetworkDriver) DeleteEndpoint(req *network.DeleteEndpointRequest) error {
-	fmt.Println("=== DeleteEndpoint")
-	fmt.Println(req)
+func (d *dummyNetworkDriver) DeleteEndpoint(req *network.DeleteEndpointRequest) error {
+	logrus.Println("=== DeleteEndpoint")
+	logrus.Println(req)
 	return nil
 }
 
-func (dummyNetworkDriver) EndpointInfo(req *network.InfoRequest) (*network.InfoResponse, error) {
-	fmt.Println("=== EndpointInfo")
-	fmt.Println(req)
+func (d *dummyNetworkDriver) EndpointInfo(req *network.InfoRequest) (*network.InfoResponse, error) {
+	logrus.Println("=== EndpointInfo")
+	logrus.Println(req)
 	r := &network.InfoResponse{}
 	return r, nil
 }
 
-func (dummyNetworkDriver) Join(req *network.JoinRequest) (*network.JoinResponse, error) {
-	fmt.Println("=== Join")
-	fmt.Println(req)
-	fmt.Println("options:")
+func (d *dummyNetworkDriver) Join(req *network.JoinRequest) (*network.JoinResponse, error) {
+	logrus.Println("=== Join")
+	logrus.Println(req)
+	logrus.Println("options:")
 	for k, v := range req.Options {
 		fmt.Printf("%v: %v\n", k, v)
 	}
@@ -132,32 +145,32 @@ func (dummyNetworkDriver) Join(req *network.JoinRequest) (*network.JoinResponse,
 	return r, nil
 }
 
-func (dummyNetworkDriver) Leave(req *network.LeaveRequest) error {
-	fmt.Println("=== Leave")
-	fmt.Println(req)
+func (d *dummyNetworkDriver) Leave(req *network.LeaveRequest) error {
+	logrus.Println("=== Leave")
+	logrus.Println(req)
 	return nil
 }
 
-func (dummyNetworkDriver) DiscoverNew(req *network.DiscoveryNotification) error {
-	fmt.Println("=== DiscoverNew")
-	fmt.Println(req)
+func (d *dummyNetworkDriver) DiscoverNew(req *network.DiscoveryNotification) error {
+	logrus.Println("=== DiscoverNew")
+	logrus.Println(req)
 	return nil
 }
 
-func (dummyNetworkDriver) DiscoverDelete(req *network.DiscoveryNotification) error {
-	fmt.Println("=== DiscoverDelete")
-	fmt.Println(req)
+func (d *dummyNetworkDriver) DiscoverDelete(req *network.DiscoveryNotification) error {
+	logrus.Println("=== DiscoverDelete")
+	logrus.Println(req)
 	return nil
 }
 
-func (dummyNetworkDriver) ProgramExternalConnectivity(req *network.ProgramExternalConnectivityRequest) error {
-	fmt.Println("=== ProgramExternalConnectivity")
-	fmt.Println(req)
+func (d *dummyNetworkDriver) ProgramExternalConnectivity(req *network.ProgramExternalConnectivityRequest) error {
+	logrus.Println("=== ProgramExternalConnectivity")
+	logrus.Println(req)
 	return nil
 }
 
-func (dummyNetworkDriver) RevokeExternalConnectivity(req *network.RevokeExternalConnectivityRequest) error {
-	fmt.Println("=== RevokeExternalConnectivity")
-	fmt.Println(req)
+func (d *dummyNetworkDriver) RevokeExternalConnectivity(req *network.RevokeExternalConnectivityRequest) error {
+	logrus.Println("=== RevokeExternalConnectivity")
+	logrus.Println(req)
 	return nil
 }
