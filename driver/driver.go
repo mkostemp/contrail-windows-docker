@@ -6,6 +6,7 @@ package driver
 import (
 	"fmt"
 
+	"github.com/Microsoft/hcsshim"
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/go-plugins-helpers/network"
 )
@@ -19,15 +20,39 @@ const (
 )
 
 type ContrailDriver struct {
+	HnsID string
 }
 
 func NewDriver() (*ContrailDriver, error) {
-	d := &ContrailDriver{}
+
+	subnets := []hcsshim.Subnet{
+		{
+			AddressPrefix:  "172.117.0.0/16",
+			GatewayAddress: "172.117.0.1",
+		},
+	}
+
+	configuration := &hcsshim.HNSNetwork{
+		Name:               NetworkHNSname,
+		Type:               "transparent",
+		Subnets:            subnets,
+		NetworkAdapterName: "Ethernet0",
+	}
+
+	hnsID, err := CreateHNSNetwork(configuration)
+	if err != nil {
+		return nil, err
+	}
+
+	d := &ContrailDriver{
+		HnsID: hnsID,
+	}
 	return d, nil
 }
 
 func (d *ContrailDriver) Teardown() error {
-	return nil
+	err := DeleteHNSNetwork(d.HnsID)
+	return err
 }
 
 func (d *ContrailDriver) GetCapabilities() (*network.CapabilitiesResponse, error) {
@@ -109,7 +134,6 @@ func (d *ContrailDriver) Join(req *network.JoinRequest) (*network.JoinResponse, 
 		fmt.Printf("%v: %v\n", k, v)
 	}
 	r := &network.JoinResponse{}
-	r.DisableGatewayService = true
 	return r, nil
 }
 

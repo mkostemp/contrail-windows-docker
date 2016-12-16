@@ -2,8 +2,10 @@ package test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/codilime/contrail-windows-docker/driver"
+	"github.com/docker/go-connections/sockets"
 	"github.com/docker/go-plugins-helpers/network"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -11,30 +13,68 @@ import (
 
 func TestDriver(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Network Driver test suite")
+	RunSpecs(t, "Contrail Network Driver test suite")
 }
 
-var _ = Describe("Network Driver", func() {
+var _ = Describe("Contrail Network Driver", func() {
 
-	contrail_driver := &driver.ContrailDriver{}
+	contrailDriver := &driver.ContrailDriver{}
 
-	Context("initially", func() {
-		It("listens on a pipe", func() {})
-		It("tries to connect to existing HNS switch", func() {})
-		It("if HNS switch doesn't exist, creates a new one", func() {})
+	Context("upon starting", func() {
+
+		It("listens on a pipe", func() {
+			d := startDriver()
+			defer stopDriver(d)
+
+			Skip("TODO")
+			_, err := sockets.DialPipe("//./pipe/"+driver.DriverName, time.Second*3)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("tries to connect to existing HNS switch", func() {
+			d := startDriver()
+			defer stopDriver(d)
+		})
+
+		It("if HNS switch doesn't exist, creates a new one", func() {
+			net, err := driver.GetHNSNetworkByName(driver.NetworkHNSname)
+			Expect(net).To(BeNil())
+			Expect(err).To(HaveOccurred())
+
+			d := startDriver()
+			defer stopDriver(d)
+
+			net, err = driver.GetHNSNetworkByName(driver.NetworkHNSname)
+			Expect(net).ToNot(BeNil())
+			Expect(net.Id).To(Equal(d.HnsID))
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 	})
 
-	Context("on shutdown", func() {
-		It("deletes HNS switch", func() {})
+	Describe("allocating resources in Contrail Controller", func() {
+
+		Context("given correct tenant and subnet id", func() {
+			It("works", func() {})
+		})
+
+		Context("given incorrect tenant and subnet id", func() {
+			It("returns proper error message", func() {})
+		})
+
+	})
+
+	Context("upon shutting down", func() {
+		It("HNS switch isn't removed", func() {})
 	})
 
 	Context("on request from docker daemon", func() {
 
 		Context("on GetCapabilities", func() {
 			It("returns local scope CapabilitiesResponse, nil", func() {
-				resp, err := contrail_driver.GetCapabilities()
+				resp, err := contrailDriver.GetCapabilities()
 				Expect(resp).To(Equal(&network.CapabilitiesResponse{Scope: "local"}))
-				Expect(err).ShouldNot(HaveOccurred())
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
@@ -52,25 +92,25 @@ var _ = Describe("Network Driver", func() {
 		Context("on AllocateNetwork", func() {
 			It("responds with empty AllocateNetworkResponse, nil", func() {
 				req := network.AllocateNetworkRequest{}
-				resp, err := contrail_driver.AllocateNetwork(&req)
+				resp, err := contrailDriver.AllocateNetwork(&req)
 				Expect(resp).To(Equal(&network.AllocateNetworkResponse{}))
-				Expect(err).ShouldNot(HaveOccurred())
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
 		Context("on DeleteNetwork", func() {
 			It("responds with nil", func() {
 				req := network.DeleteNetworkRequest{}
-				err := contrail_driver.DeleteNetwork(&req)
-				Expect(err).ShouldNot(HaveOccurred())
+				err := contrailDriver.DeleteNetwork(&req)
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
 		Context("on FreeNetwork", func() {
 			It("responds with nil", func() {
 				req := network.FreeNetworkRequest{}
-				err := contrail_driver.FreeNetwork(&req)
-				Expect(err).ShouldNot(HaveOccurred())
+				err := contrailDriver.FreeNetwork(&req)
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
@@ -80,9 +120,9 @@ var _ = Describe("Network Driver", func() {
 			It("configures vRouter agent", func() {})
 			It("responds with proper CreateEndpointResponse, nil", func() {
 				req := network.CreateEndpointRequest{}
-				resp, err := contrail_driver.CreateEndpoint(&req)
+				resp, err := contrailDriver.CreateEndpoint(&req)
 				Expect(resp).To(Equal(&network.CreateEndpointResponse{}))
-				Expect(err).ShouldNot(HaveOccurred())
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
@@ -91,8 +131,8 @@ var _ = Describe("Network Driver", func() {
 			It("configures vRouter Agent", func() {})
 			It("responds with nil", func() {
 				req := network.DeleteEndpointRequest{}
-				err := contrail_driver.DeleteEndpoint(&req)
-				Expect(err).ShouldNot(HaveOccurred())
+				err := contrailDriver.DeleteEndpoint(&req)
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
@@ -113,7 +153,7 @@ var _ = Describe("Network Driver", func() {
 		Context("on Leave", func() {
 
 			Context("queried endpoint exists", func() {
-				It("responds with proper JoinResponse, nil", func() {}) // nil maybe?
+				It("responds with proper JoinResponse, nil", func() {})
 			})
 
 			Context("queried endpoint doesn't exist", func() {
@@ -124,47 +164,49 @@ var _ = Describe("Network Driver", func() {
 		Context("on DiscoverNew", func() {
 			It("responds with nil", func() {
 				req := network.DiscoveryNotification{}
-				err := contrail_driver.DiscoverNew(&req)
-				Expect(err).ShouldNot(HaveOccurred())
+				err := contrailDriver.DiscoverNew(&req)
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
 		Context("on DiscoverDelete", func() {
 			It("responds with nil", func() {
 				req := network.DiscoveryNotification{}
-				err := contrail_driver.DiscoverDelete(&req)
-				Expect(err).ShouldNot(HaveOccurred())
+				err := contrailDriver.DiscoverDelete(&req)
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
 		Context("on ProgramExternalConnectivity", func() {
 			It("responds with nil", func() {
 				req := network.ProgramExternalConnectivityRequest{}
-				err := contrail_driver.ProgramExternalConnectivity(&req)
-				Expect(err).ShouldNot(HaveOccurred())
+				err := contrailDriver.ProgramExternalConnectivity(&req)
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
 		Context("on RevokeExternalConnectivity", func() {
 			It("responds with nil", func() {
 				req := network.RevokeExternalConnectivityRequest{}
-				err := contrail_driver.RevokeExternalConnectivity(&req)
-				Expect(err).ShouldNot(HaveOccurred())
+				err := contrailDriver.RevokeExternalConnectivity(&req)
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
 	})
-
-	Describe("allocating resources in Contrail Controller", func() {
-
-		Context("given correct tenant and subnet id", func() {
-			It("works", func() {})
-		})
-
-		Context("given incorrect tenant and subnet id", func() {
-			It("returns proper error message", func() {})
-		})
-
-	})
-
 })
+
+func startDriver() *driver.ContrailDriver {
+	d, err := driver.NewDriver()
+	Expect(err).ToNot(HaveOccurred())
+	Expect(d.HnsID).ToNot(Equal(""))
+	return d
+}
+
+func stopDriver(d *driver.ContrailDriver) {
+	err := d.Teardown()
+	Expect(err).ToNot(HaveOccurred())
+	net, err := driver.GetHNSNetworkByName(driver.NetworkHNSname)
+	Expect(net).To(BeNil())
+	Expect(err).To(HaveOccurred())
+}
