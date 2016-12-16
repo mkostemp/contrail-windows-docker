@@ -68,6 +68,18 @@ var _ = Describe("Contrail Network Driver", func() {
 		It("HNS switch isn't removed", func() {})
 	})
 
+	Describe("allocating resources in Contrail Controller", func() {
+
+		Context("given correct tenant and subnet id", func() {
+			It("works", func() {})
+		})
+
+		Context("given incorrect tenant and subnet id", func() {
+			It("returns proper error message", func() {})
+		})
+
+	})
+
 	Context("on request from docker daemon", func() {
 
 		Context("on GetCapabilities", func() {
