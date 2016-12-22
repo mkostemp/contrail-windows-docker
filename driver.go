@@ -25,10 +25,11 @@ func main() {
 	h := network.NewHandler(d)
 
 	config := sdk.WindowsPipeConfig{
-		// This will set permissions for Everyone user allowing him to open, write, read the pipe
-		SecurityDescriptor: "S:(ML;;NW;;;LW)D:(A;;0x12019f;;;WD)",
-		InBufferSize:       4096,
-		OutBufferSize:      4096,
+		// This will set permissions for Service, System, Adminstrator group and account to have full access
+		SecurityDescriptor: "D:(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;FA;;;LA)(A;ID;FA;;;LS)",
+
+		InBufferSize:  4096,
+		OutBufferSize: 4096,
 	}
 
 	h.ServeWindows("//./pipe/"+DRIVERNAME, DRIVERNAME, &config)
