@@ -23,12 +23,12 @@ type ContrailDriver struct {
 	HnsID string
 }
 
-func NewDriver() (*ContrailDriver, error) {
+func NewDriver(subnet, gateway, adapter string) (*ContrailDriver, error) {
 
 	subnets := []hcsshim.Subnet{
 		{
-			AddressPrefix:  "172.117.0.0/16",
-			GatewayAddress: "172.117.0.1",
+			AddressPrefix:  subnet,
+			GatewayAddress: gateway,
 		},
 	}
 
@@ -36,7 +36,7 @@ func NewDriver() (*ContrailDriver, error) {
 		Name:               NetworkHNSname,
 		Type:               "transparent",
 		Subnets:            subnets,
-		NetworkAdapterName: "Ethernet0",
+		NetworkAdapterName: adapter,
 	}
 
 	hnsID, err := CreateHNSNetwork(configuration)

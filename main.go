@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/codilime/contrail-windows-docker/driver"
 	"github.com/docker/go-plugins-helpers/network"
@@ -8,8 +10,16 @@ import (
 )
 
 func main() {
-	d, err := driver.NewDriver()
-	if err != nil {
+	var subnet = flag.String("subnet", "172.117.0.0/16", "subnet in CIDR format for HNS")
+	var gateway = flag.String("gateway", "172.117.0.1", "default gateway IP for HNS")
+	var adapter = flag.String("adapter", "Ethernet0",
+		"net adapter for HNS switch, must be physical")
+	flag.Parse()
+
+	var d *driver.ContrailDriver
+	var err error
+
+	if d, err = driver.NewDriver(*subnet, *gateway, *adapter); err != nil {
 		logrus.Error(err)
 	}
 	h := network.NewHandler(d)
