@@ -5,8 +5,6 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/codilime/contrail-windows-docker/driver"
-	"github.com/docker/go-plugins-helpers/network"
-	"github.com/docker/go-plugins-helpers/sdk"
 )
 
 func main() {
@@ -21,20 +19,15 @@ func main() {
 
 	if d, err = driver.NewDriver(*subnet, *gateway, *adapter); err != nil {
 		logrus.Error(err)
-	}
-	h := network.NewHandler(d)
-
-	config := sdk.WindowsPipeConfig{
-		// This will set permissions for Service, System, Adminstrator group and account to have full access
-		SecurityDescriptor: "D:(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;FA;;;LA)(A;ID;FA;;;LS)",
-
-		InBufferSize:  4096,
-		OutBufferSize: 4096,
+		return
 	}
 
-	h.ServeWindows("//./pipe/"+driver.DriverName, driver.DriverName, &config)
-	err = d.Teardown()
-	if err != nil {
+	if err = d.Serve(); err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	if err = d.Teardown(); err != nil {
 		logrus.Error(err)
 	}
 }

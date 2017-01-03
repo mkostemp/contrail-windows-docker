@@ -9,6 +9,7 @@ import (
 	"github.com/Microsoft/hcsshim"
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/go-plugins-helpers/network"
+	"github.com/docker/go-plugins-helpers/sdk"
 )
 
 const (
@@ -48,6 +49,21 @@ func NewDriver(subnet, gateway, adapter string) (*ContrailDriver, error) {
 		HnsID: hnsID,
 	}
 	return d, nil
+}
+
+func (d *ContrailDriver) Serve() error {
+	h := network.NewHandler(d)
+
+	config := sdk.WindowsPipeConfig{
+		// This will set permissions for Service, System, Adminstrator group and account to have full access
+		SecurityDescriptor: "D:(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;FA;;;LA)(A;ID;FA;;;LS)",
+
+		InBufferSize:  4096,
+		OutBufferSize: 4096,
+	}
+
+	h.ServeWindows("//./pipe/"+DriverName, DriverName, &config)
+	return nil
 }
 
 func (d *ContrailDriver) Teardown() error {
