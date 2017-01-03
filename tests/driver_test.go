@@ -197,7 +197,7 @@ var _ = Describe("Contrail Network Driver", func() {
 })
 
 func startDriver() *driver.ContrailDriver {
-	d, err := driver.NewDriver()
+	d, err := driver.NewDriver("172.100.0.0/16", "172.100.0.1", "Ethernet0")
 	Expect(err).ToNot(HaveOccurred())
 	Expect(d.HnsID).ToNot(Equal(""))
 	return d
