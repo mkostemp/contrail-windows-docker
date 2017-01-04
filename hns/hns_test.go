@@ -47,7 +47,7 @@ var _ = Describe("HNS wrapper", func() {
 		*/
 
 		testNetName := "TestNetwork"
-		testHnsID := ""
+		testHnsNetID := ""
 
 		subnets := []hcsshim.Subnet{
 			{
@@ -55,7 +55,7 @@ var _ = Describe("HNS wrapper", func() {
 				GatewayAddress: "1.1.1.1",
 			},
 		}
-		configuration := &hcsshim.HNSNetwork{
+		netConfiguration := &hcsshim.HNSNetwork{
 			Name:               testNetName,
 			Type:               "transparent",
 			Subnets:            subnets,
@@ -63,20 +63,20 @@ var _ = Describe("HNS wrapper", func() {
 		}
 
 		BeforeEach(func() {
-			Expect(testHnsID).To(Equal(""))
+			Expect(testHnsNetID).To(Equal(""))
 			var err error
-			testHnsID, err = CreateHNSNetwork(configuration)
+			testHnsNetID, err = CreateHNSNetwork(netConfiguration)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(testHnsID).ToNot(Equal(""))
+			Expect(testHnsNetID).ToNot(Equal(""))
 		})
 
 		AfterEach(func() {
-			Expect(testHnsID).ToNot(Equal(""))
-			err := DeleteHNSNetwork(testHnsID)
+			Expect(testHnsNetID).ToNot(Equal(""))
+			err := DeleteHNSNetwork(testHnsNetID)
 			Expect(err).ToNot(HaveOccurred())
-			_, err = GetHNSNetwork(testHnsID)
+			_, err = GetHNSNetwork(testHnsNetID)
 			Expect(err).To(HaveOccurred())
-			testHnsID = ""
+			testHnsNetID = ""
 			nets, err := ListHNSNetworks()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(nets).ToNot(BeNil())
@@ -90,7 +90,7 @@ var _ = Describe("HNS wrapper", func() {
 			Expect(len(nets)).To(Equal(originalNumNetworks + 1))
 			found := false
 			for _, n := range nets {
-				if n.Id == testHnsID {
+				if n.Id == testHnsNetID {
 					found = true
 					break
 				}
@@ -99,17 +99,38 @@ var _ = Describe("HNS wrapper", func() {
 		})
 
 		Specify("getting a single HNS network works", func() {
-			net, err := GetHNSNetwork(testHnsID)
+			net, err := GetHNSNetwork(testHnsNetID)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(net).ToNot(BeNil())
-			Expect(net.Id).To(Equal(testHnsID))
+			Expect(net.Id).To(Equal(testHnsNetID))
 		})
 
 		Specify("getting a single HNS network by name works", func() {
 			net, err := GetHNSNetworkByName(testNetName)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(net).ToNot(BeNil())
-			Expect(net.Id).To(Equal(testHnsID))
+			Expect(net.Id).To(Equal(testHnsNetID))
+		})
+
+		Specify("HNS endpoint operations work", func() {
+			hnsEndpointConfig := &hcsshim.HNSEndpoint{
+				VirtualNetwork: testHnsNetID,
+			}
+
+			endpointID, err := CreateHNSEndpoint(hnsEndpointConfig)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(endpointID).ToNot(Equal(""))
+
+			endpoint, err := GetHNSEndpoint(endpointID)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(endpoint).ToNot(BeNil())
+
+			err = DeleteHNSEndpoint(endpointID)
+			Expect(err).ToNot(HaveOccurred())
+
+			endpoint, err = GetHNSEndpoint(endpointID)
+			Expect(err).To(HaveOccurred())
+			Expect(endpoint).To(BeNil())
 		})
 	})
 
