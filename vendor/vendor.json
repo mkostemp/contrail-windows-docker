@@ -3,6 +3,30 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "+p0hTFKvQWDgcuXwcjR2axDqk+Y=",
+			"path": "github.com/Juniper/contrail-go-api",
+			"revision": "26ec4ccb335ec9336b59582d361e6252083cf80d",
+			"revisionTime": "2016-11-04T20:37:55Z"
+		},
+		{
+			"checksumSHA1": "hr96cWTJ6B7+wS+XVQND7rLYMkY=",
+			"path": "github.com/Juniper/contrail-go-api/config",
+			"revision": "26ec4ccb335ec9336b59582d361e6252083cf80d",
+			"revisionTime": "2016-11-04T20:37:55Z"
+		},
+		{
+			"checksumSHA1": "VXtpA9anlAyAoaFJCmBsne3pvUs=",
+			"path": "github.com/Juniper/contrail-go-api/mocks",
+			"revision": "26ec4ccb335ec9336b59582d361e6252083cf80d",
+			"revisionTime": "2016-11-04T20:37:55Z"
+		},
+		{
+			"checksumSHA1": "jE9hFhELR/r4VY8FChGa27d6tCU=",
+			"path": "github.com/Juniper/contrail-go-api/types",
+			"revision": "26ec4ccb335ec9336b59582d361e6252083cf80d",
+			"revisionTime": "2016-11-04T20:37:55Z"
+		},
+		{
 			"checksumSHA1": "K+pGIEJLDeWwQB/yw9dXyJV04NE=",
 			"path": "github.com/Microsoft/go-winio",
 			"revision": "24a3e3d3fc7451805e09d11e11e95d9a0a4f205e",
@@ -39,6 +63,192 @@
 			"revisionTime": "2016-11-23T20:57:46Z"
 		},
 		{
+			"checksumSHA1": "Y27Agdpf4FN4HGANJ8cp8+Q6VO4=",
+			"path": "github.com/golang/glog",
+			"revision": "23def4e6c14b4da8ac2ed8007337bc5eb5007998",
+			"revisionTime": "2016-01-25T20:49:56Z"
+		},
+		{
+			"checksumSHA1": "2f92QrDcGzm0VfOxPNkdQ9ce4T0=",
+			"path": "github.com/onsi/ginkgo",
+			"revision": "00054c0bb96fc880d4e0be1b90937fad438c5290",
+			"revisionTime": "2016-11-10T18:03:13Z"
+		},
+		{
+			"checksumSHA1": "X1LcoIl6oSGguIlT5tLGvq1layI=",
+			"path": "github.com/onsi/ginkgo/config",
+			"revision": "00054c0bb96fc880d4e0be1b90937fad438c5290",
+			"revisionTime": "2016-11-10T18:03:13Z"
+		},
+		{
+			"checksumSHA1": "aLkBED7RUwstAO+u2MgUXUwOwPo=",
+			"path": "github.com/onsi/ginkgo/internal/codelocation",
+			"revision": "00054c0bb96fc880d4e0be1b90937fad438c5290",
+			"revisionTime": "2016-11-10T18:03:13Z"
+		},
+		{
+			"checksumSHA1": "Hpm+s2t5QAGXQmdaYEmcZinuRv4=",
+			"path": "github.com/onsi/ginkgo/internal/containernode",
+			"revision": "00054c0bb96fc880d4e0be1b90937fad438c5290",
+			"revisionTime": "2016-11-10T18:03:13Z"
+		},
+		{
+			"checksumSHA1": "W75kneoXg12gVrxHGuQRDAI1+bU=",
+			"path": "github.com/onsi/ginkgo/internal/failer",
+			"revision": "00054c0bb96fc880d4e0be1b90937fad438c5290",
+			"revisionTime": "2016-11-10T18:03:13Z"
+		},
+		{
+			"checksumSHA1": "6kLWQ0je1JPkDiWkH3lo1M33/g4=",
+			"path": "github.com/onsi/ginkgo/internal/leafnodes",
+			"revision": "00054c0bb96fc880d4e0be1b90937fad438c5290",
+			"revisionTime": "2016-11-10T18:03:13Z"
+		},
+		{
+			"checksumSHA1": "S5u8IBEg9gzhQMHR0uFnM7m1Yrk=",
+			"path": "github.com/onsi/ginkgo/internal/remote",
+			"revision": "00054c0bb96fc880d4e0be1b90937fad438c5290",
+			"revisionTime": "2016-11-10T18:03:13Z"
+		},
+		{
+			"checksumSHA1": "tb/gmbdfdKNW930nJoMAvxHyjIk=",
+			"path": "github.com/onsi/ginkgo/internal/spec",
+			"revision": "00054c0bb96fc880d4e0be1b90937fad438c5290",
+			"revisionTime": "2016-11-10T18:03:13Z"
+		},
+		{
+			"checksumSHA1": "4xjKY7iKUqycAN1fso2KauxXrcU=",
+			"path": "github.com/onsi/ginkgo/internal/specrunner",
+			"revision": "00054c0bb96fc880d4e0be1b90937fad438c5290",
+			"revisionTime": "2016-11-10T18:03:13Z"
+		},
+		{
+			"checksumSHA1": "jNUMcdwPI2iYtgqaOruJ2mbC9oU=",
+			"path": "github.com/onsi/ginkgo/internal/suite",
+			"revision": "00054c0bb96fc880d4e0be1b90937fad438c5290",
+			"revisionTime": "2016-11-10T18:03:13Z"
+		},
+		{
+			"checksumSHA1": "OlKgeFvAdUTyLKENgefii4Bj5ZQ=",
+			"path": "github.com/onsi/ginkgo/internal/testingtproxy",
+			"revision": "00054c0bb96fc880d4e0be1b90937fad438c5290",
+			"revisionTime": "2016-11-10T18:03:13Z"
+		},
+		{
+			"checksumSHA1": "kn+ah21KBK7BH3h339Bi587hR3w=",
+			"path": "github.com/onsi/ginkgo/internal/writer",
+			"revision": "00054c0bb96fc880d4e0be1b90937fad438c5290",
+			"revisionTime": "2016-11-10T18:03:13Z"
+		},
+		{
+			"checksumSHA1": "pleq5Da7qGzyKoTsd3KY74byOrY=",
+			"path": "github.com/onsi/ginkgo/reporters",
+			"revision": "00054c0bb96fc880d4e0be1b90937fad438c5290",
+			"revisionTime": "2016-11-10T18:03:13Z"
+		},
+		{
+			"checksumSHA1": "xKxFylDfX3LDHOa1YjFtyNNZSlQ=",
+			"path": "github.com/onsi/ginkgo/reporters/stenographer",
+			"revision": "00054c0bb96fc880d4e0be1b90937fad438c5290",
+			"revisionTime": "2016-11-10T18:03:13Z"
+		},
+		{
+			"checksumSHA1": "LVkjlAbgqhs1ADciRhd0pzbzAow=",
+			"path": "github.com/onsi/ginkgo/reporters/stenographer/support/go-colorable",
+			"revision": "00054c0bb96fc880d4e0be1b90937fad438c5290",
+			"revisionTime": "2016-11-10T18:03:13Z"
+		},
+		{
+			"checksumSHA1": "EwckRHgnbAYuHLDQv2frVWsTvYs=",
+			"path": "github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty",
+			"revision": "00054c0bb96fc880d4e0be1b90937fad438c5290",
+			"revisionTime": "2016-11-10T18:03:13Z"
+		},
+		{
+			"checksumSHA1": "wMOfOtzmjCGyDQjjWOGlLd7xH+w=",
+			"path": "github.com/onsi/ginkgo/types",
+			"revision": "00054c0bb96fc880d4e0be1b90937fad438c5290",
+			"revisionTime": "2016-11-10T18:03:13Z"
+		},
+		{
+			"checksumSHA1": "5n5t9Y7vqvdK6D504+hz+Lassco=",
+			"path": "github.com/onsi/gomega",
+			"revision": "f1f0f388b31eca4e2cbe7a6dd8a3a1dfddda5b1c",
+			"revisionTime": "2016-11-18T20:51:29Z"
+		},
+		{
+			"checksumSHA1": "+oZFCABPbjwK/eOubXZ/xLLsEsc=",
+			"path": "github.com/onsi/gomega/format",
+			"revision": "f1f0f388b31eca4e2cbe7a6dd8a3a1dfddda5b1c",
+			"revisionTime": "2016-11-18T20:51:29Z"
+		},
+		{
+			"checksumSHA1": "JwGVeTqzV1k4mFU5p7PndRSoStQ=",
+			"path": "github.com/onsi/gomega/internal/assertion",
+			"revision": "f1f0f388b31eca4e2cbe7a6dd8a3a1dfddda5b1c",
+			"revisionTime": "2016-11-18T20:51:29Z"
+		},
+		{
+			"checksumSHA1": "rLsvgZI2/8rNivpqvKwYYacdWZU=",
+			"path": "github.com/onsi/gomega/internal/asyncassertion",
+			"revision": "f1f0f388b31eca4e2cbe7a6dd8a3a1dfddda5b1c",
+			"revisionTime": "2016-11-18T20:51:29Z"
+		},
+		{
+			"checksumSHA1": "jjm1Wc85djyWw7GvNMzWLIauEIM=",
+			"path": "github.com/onsi/gomega/internal/oraclematcher",
+			"revision": "f1f0f388b31eca4e2cbe7a6dd8a3a1dfddda5b1c",
+			"revisionTime": "2016-11-18T20:51:29Z"
+		},
+		{
+			"checksumSHA1": "e/6Ll0j08p1QIqSMfJFIPpLQfFg=",
+			"path": "github.com/onsi/gomega/internal/testingtsupport",
+			"revision": "f1f0f388b31eca4e2cbe7a6dd8a3a1dfddda5b1c",
+			"revisionTime": "2016-11-18T20:51:29Z"
+		},
+		{
+			"checksumSHA1": "M29ZBNtru+956k7uI39PhiqiGPA=",
+			"path": "github.com/onsi/gomega/matchers",
+			"revision": "f1f0f388b31eca4e2cbe7a6dd8a3a1dfddda5b1c",
+			"revisionTime": "2016-11-18T20:51:29Z"
+		},
+		{
+			"checksumSHA1": "yujI/4mbMBUDM4gF9t/V74S8nvs=",
+			"path": "github.com/onsi/gomega/matchers/support/goraph/bipartitegraph",
+			"revision": "f1f0f388b31eca4e2cbe7a6dd8a3a1dfddda5b1c",
+			"revisionTime": "2016-11-18T20:51:29Z"
+		},
+		{
+			"checksumSHA1": "8IzcUa1ol+CMxmbvBgpMO+UKh+U=",
+			"path": "github.com/onsi/gomega/matchers/support/goraph/edge",
+			"revision": "f1f0f388b31eca4e2cbe7a6dd8a3a1dfddda5b1c",
+			"revisionTime": "2016-11-18T20:51:29Z"
+		},
+		{
+			"checksumSHA1": "UfEAjTlj3fJa+ELPz7z+2vjcEhs=",
+			"path": "github.com/onsi/gomega/matchers/support/goraph/node",
+			"revision": "f1f0f388b31eca4e2cbe7a6dd8a3a1dfddda5b1c",
+			"revisionTime": "2016-11-18T20:51:29Z"
+		},
+		{
+			"checksumSHA1": "xikz+vEAfn2/1ye6MgFPnP7aIdc=",
+			"path": "github.com/onsi/gomega/matchers/support/goraph/util",
+			"revision": "f1f0f388b31eca4e2cbe7a6dd8a3a1dfddda5b1c",
+			"revisionTime": "2016-11-18T20:51:29Z"
+		},
+		{
+			"checksumSHA1": "0VhK2cweXh/c94SGHDOaw9B5+Pw=",
+			"path": "github.com/onsi/gomega/types",
+			"revision": "f1f0f388b31eca4e2cbe7a6dd8a3a1dfddda5b1c",
+			"revisionTime": "2016-11-18T20:51:29Z"
+		},
+		{
+			"checksumSHA1": "+CG2pxN2p/zNNOLkuoiJDUC0oOI=",
+			"path": "github.com/pborman/uuid",
+			"revision": "5007efa264d92316c43112bc573e754bc889b7b1",
+			"revisionTime": "2016-12-06T18:47:45Z"
+		},
+		{
 			"checksumSHA1": "LvdVRE0FqdR68SvVpRkHs1rxhcA=",
 			"path": "golang.org/x/net/proxy",
 			"revision": "4a1c855a052c2bad0e019ccfe8193a33d77adf5e",
@@ -55,6 +265,12 @@
 			"path": "golang.org/x/sys/windows",
 			"revision": "478fcf54317e52ab69f40bb4c7a1520288d7f7ea",
 			"revisionTime": "2016-12-05T15:46:50Z"
+		},
+		{
+			"checksumSHA1": "21kDrz4DnDppRHgK7vVmOFwgcSQ=",
+			"path": "gopkg.in/yaml.v2",
+			"revision": "a5b47d31c556af34a302ce5d659e6fea44d90de0",
+			"revisionTime": "2016-09-28T15:37:09Z"
 		}
 	],
 	"rootPath": "github.com/codilime/contrail-windows-docker"
