@@ -8,23 +8,20 @@ import (
 
 	"github.com/Microsoft/hcsshim"
 	"github.com/Sirupsen/logrus"
+	"github.com/codilime/contrail-windows-docker/common"
+	"github.com/codilime/contrail-windows-docker/controller"
+	"github.com/codilime/contrail-windows-docker/hns"
 	"github.com/docker/go-plugins-helpers/network"
 	"github.com/docker/go-plugins-helpers/sdk"
 )
 
-const (
-	// DriverName is name of the driver that is to be specified during docker network creation
-	DriverName = "Contrail"
-
-	// HNSNetworkName is a constant name for HNS network
-	NetworkHNSname = "ContrailHNSNet"
-)
-
 type ContrailDriver struct {
-	HnsID string
+	controller *controller.Controller
+	HnsID      string
 }
 
-func NewDriver(subnet, gateway, adapter string) (*ContrailDriver, error) {
+func NewDriver(subnet, gateway, adapter, controllerIP string, controllerPort int) (*ContrailDriver,
+	error) {
 
 	subnets := []hcsshim.Subnet{
 		{
@@ -34,19 +31,20 @@ func NewDriver(subnet, gateway, adapter string) (*ContrailDriver, error) {
 	}
 
 	configuration := &hcsshim.HNSNetwork{
-		Name:               NetworkHNSname,
+		Name:               common.NetworkHNSname,
 		Type:               "transparent",
 		Subnets:            subnets,
 		NetworkAdapterName: adapter,
 	}
 
-	hnsID, err := CreateHNSNetwork(configuration)
+	hnsID, err := hns.CreateHNSNetwork(configuration)
 	if err != nil {
 		return nil, err
 	}
 
 	d := &ContrailDriver{
-		HnsID: hnsID,
+		controller: controller.NewController(controllerIP, controllerPort),
+		HnsID:      hnsID,
 	}
 	return d, nil
 }
@@ -62,12 +60,12 @@ func (d *ContrailDriver) Serve() error {
 		OutBufferSize: 4096,
 	}
 
-	h.ServeWindows("//./pipe/"+DriverName, DriverName, &config)
+	h.ServeWindows("//./pipe/"+common.DriverName, common.DriverName, &config)
 	return nil
 }
 
 func (d *ContrailDriver) Teardown() error {
-	err := DeleteHNSNetwork(d.HnsID)
+	err := hns.DeleteHNSNetwork(d.HnsID)
 	return err
 }
 

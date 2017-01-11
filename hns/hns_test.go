@@ -1,11 +1,11 @@
-package test
+package hns
 
 import (
 	"strings"
 	"testing"
 
 	"github.com/Microsoft/hcsshim"
-	"github.com/codilime/contrail-windows-docker/driver"
+	"github.com/codilime/contrail-windows-docker/common"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -15,12 +15,22 @@ func TestHNS(t *testing.T) {
 	RunSpecs(t, "HNS wrapper test suite")
 }
 
+var _ = BeforeSuite(func() {
+	err := common.HardResetHNS()
+	Expect(err).ToNot(HaveOccurred())
+})
+
+var _ = AfterSuite(func() {
+	err := common.HardResetHNS()
+	Expect(err).ToNot(HaveOccurred())
+})
+
 var _ = Describe("HNS wrapper", func() {
 
 	var originalNumNetworks int
 
 	BeforeEach(func() {
-		nets, err := driver.ListHNSNetworks()
+		nets, err := ListHNSNetworks()
 		Expect(err).ToNot(HaveOccurred())
 		originalNumNetworks = len(nets)
 	})
@@ -55,27 +65,26 @@ var _ = Describe("HNS wrapper", func() {
 		BeforeEach(func() {
 			Expect(testHnsID).To(Equal(""))
 			var err error
-			testHnsID, err = driver.CreateHNSNetwork(configuration)
+			testHnsID, err = CreateHNSNetwork(configuration)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(testHnsID).ToNot(Equal(""))
 		})
 
 		AfterEach(func() {
 			Expect(testHnsID).ToNot(Equal(""))
-			err := driver.DeleteHNSNetwork(testHnsID)
+			err := DeleteHNSNetwork(testHnsID)
 			Expect(err).ToNot(HaveOccurred())
-			_, err = driver.GetHNSNetwork(testHnsID)
+			_, err = GetHNSNetwork(testHnsID)
 			Expect(err).To(HaveOccurred())
 			testHnsID = ""
-			nets, err := driver.ListHNSNetworks()
+			nets, err := ListHNSNetworks()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(nets).ToNot(BeNil())
 			Expect(len(nets)).To(Equal(originalNumNetworks))
 		})
 
 		Specify("listing all HNS networks works", func() {
-			By("listing all HNS networks works")
-			nets, err := driver.ListHNSNetworks()
+			nets, err := ListHNSNetworks()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(nets).ToNot(BeNil())
 			Expect(len(nets)).To(Equal(originalNumNetworks + 1))
@@ -90,14 +99,14 @@ var _ = Describe("HNS wrapper", func() {
 		})
 
 		Specify("getting a single HNS network works", func() {
-			net, err := driver.GetHNSNetwork(testHnsID)
+			net, err := GetHNSNetwork(testHnsID)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(net).ToNot(BeNil())
 			Expect(net.Id).To(Equal(testHnsID))
 		})
 
 		Specify("getting a single HNS network by name works", func() {
-			net, err := driver.GetHNSNetworkByName(testNetName)
+			net, err := GetHNSNetworkByName(testNetName)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(net).ToNot(BeNil())
 			Expect(net.Id).To(Equal(testHnsID))
@@ -107,31 +116,31 @@ var _ = Describe("HNS wrapper", func() {
 	Context("HNS network doesn't exist", func() {
 
 		BeforeEach(func() {
-			nets, err := driver.ListHNSNetworks()
+			nets, err := ListHNSNetworks()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(nets)).To(Equal(originalNumNetworks))
 		})
 
 		AfterEach(func() {
-			nets, err := driver.ListHNSNetworks()
+			nets, err := ListHNSNetworks()
 			Expect(err).ToNot(HaveOccurred())
 			for _, n := range nets {
 				if strings.Contains(n.Name, "nat") {
 					continue
 				}
-				err = driver.DeleteHNSNetwork(n.Id)
+				err = DeleteHNSNetwork(n.Id)
 				Expect(err).ToNot(HaveOccurred())
 			}
 		})
 
 		Specify("getting single HNS network returns error", func() {
-			net, err := driver.GetHNSNetwork("1234abcd")
+			net, err := GetHNSNetwork("1234abcd")
 			Expect(err).To(HaveOccurred())
 			Expect(net).To(BeNil())
 		})
 
 		Specify("getting single HNS network by name returns error", func() {
-			net, err := driver.GetHNSNetworkByName("asdf")
+			net, err := GetHNSNetworkByName("asdf")
 			Expect(err).To(HaveOccurred())
 			Expect(net).To(BeNil())
 		})
