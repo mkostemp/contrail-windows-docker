@@ -12,6 +12,8 @@ Expand-Archive -Path "$env:TEMP\docker-1.13.0-rc4.zip" -DestinationPath $env:Pro
 echo "Adding ProgramFiles\Docker to env"
 $Env:Path += ";$env:ProgramFiles\Docker"
 $p = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
+$p = $p.split(';') | sort -unique
+[system.String]::Join(";", $p)
 [Environment]::SetEnvironmentVariable("Path", $p+";$env:ProgramFiles\Docker", [EnvironmentVariableTarget]::Machine)
 
 echo "Starting docker"

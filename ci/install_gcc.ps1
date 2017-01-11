@@ -18,4 +18,6 @@ Expand-Archive C:\binutils.zip -DestinationPath C:\gcc -Force
 echo "Adding C:\gcc\bin to path"
 $Env:Path += ";C:\gcc\bin"
 $p = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
+$p = $p.split(';') | sort -unique
+[system.String]::Join(";", $p)
 [Environment]::SetEnvironmentVariable("Path", $p+";C:\gcc\bin", [EnvironmentVariableTarget]::Machine)

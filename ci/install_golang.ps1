@@ -31,5 +31,9 @@ New-Item -ItemType directory -Path C:\go_workspace\pkg
 
 echo "Adding goroot\bin and gopath\bin to path"
 $Env:Path += ";$goroot\bin;$gopath\bin"
+
 $p = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
+$p = $p.split(';') | sort -unique
+[system.String]::Join(";", $p)
+
 [Environment]::SetEnvironmentVariable("Path", $p+";$goroot\bin;$gopath\bin", [EnvironmentVariableTarget]::Machine)
