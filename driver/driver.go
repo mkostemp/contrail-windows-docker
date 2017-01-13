@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/Microsoft/hcsshim"
-	"github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	"github.com/codilime/contrail-windows-docker/common"
 	"github.com/codilime/contrail-windows-docker/controller"
 	"github.com/codilime/contrail-windows-docker/hns"
@@ -20,7 +20,7 @@ type ContrailDriver struct {
 	HnsID      string
 }
 
-func NewDriver(subnet, gateway, adapter, controllerIP string, controllerPort int) (*ContrailDriver,
+func NewDriver(subnet, gateway, adapter string, c *controller.Controller) (*ContrailDriver,
 	error) {
 
 	subnets := []hcsshim.Subnet{
@@ -43,7 +43,7 @@ func NewDriver(subnet, gateway, adapter, controllerIP string, controllerPort int
 	}
 
 	d := &ContrailDriver{
-		controller: controller.NewController(controllerIP, controllerPort),
+		controller: c,
 		HnsID:      hnsID,
 	}
 	return d, nil
@@ -70,25 +70,25 @@ func (d *ContrailDriver) Teardown() error {
 }
 
 func (d *ContrailDriver) GetCapabilities() (*network.CapabilitiesResponse, error) {
-	logrus.Debugln("=== GetCapabilities")
+	log.Debugln("=== GetCapabilities")
 	r := &network.CapabilitiesResponse{}
 	r.Scope = network.LocalScope
 	return r, nil
 }
 
 func (d *ContrailDriver) CreateNetwork(req *network.CreateNetworkRequest) error {
-	logrus.Debugln("=== CreateNetwork")
-	logrus.Debugln("network.NetworkID =", req.NetworkID)
-	logrus.Debugln(req)
-	logrus.Debugln("IPv4:")
+	log.Debugln("=== CreateNetwork")
+	log.Debugln("network.NetworkID =", req.NetworkID)
+	log.Debugln(req)
+	log.Debugln("IPv4:")
 	for _, n := range req.IPv4Data {
-		logrus.Debugln(n)
+		log.Debugln(n)
 	}
-	logrus.Debugln("IPv6:")
+	log.Debugln("IPv6:")
 	for _, n := range req.IPv6Data {
-		logrus.Debugln(n)
+		log.Debugln(n)
 	}
-	logrus.Debugln("options:")
+	log.Debugln("options:")
 	for k, v := range req.Options {
 		fmt.Printf("%v: %v\n", k, v)
 	}
@@ -97,29 +97,29 @@ func (d *ContrailDriver) CreateNetwork(req *network.CreateNetworkRequest) error 
 }
 
 func (d *ContrailDriver) AllocateNetwork(req *network.AllocateNetworkRequest) (*network.AllocateNetworkResponse, error) {
-	logrus.Debugln("=== AllocateNetwork")
-	logrus.Debugln(req)
+	log.Debugln("=== AllocateNetwork")
+	log.Debugln(req)
 	r := &network.AllocateNetworkResponse{}
 	return r, nil
 }
 
 func (d *ContrailDriver) DeleteNetwork(req *network.DeleteNetworkRequest) error {
-	logrus.Debugln("=== DeleteNetwork")
-	logrus.Debugln(req)
+	log.Debugln("=== DeleteNetwork")
+	log.Debugln(req)
 	return nil
 }
 
 func (d *ContrailDriver) FreeNetwork(req *network.FreeNetworkRequest) error {
-	logrus.Debugln("=== FreeNetwork")
-	logrus.Debugln(req)
+	log.Debugln("=== FreeNetwork")
+	log.Debugln(req)
 	return nil
 }
 
 func (d *ContrailDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*network.CreateEndpointResponse, error) {
-	logrus.Debugln("=== CreateEndpoint")
-	logrus.Debugln(req)
-	logrus.Debugln(req.Interface)
-	logrus.Debugln("options:")
+	log.Debugln("=== CreateEndpoint")
+	log.Debugln(req)
+	log.Debugln(req.Interface)
+	log.Debugln("options:")
 	for k, v := range req.Options {
 		fmt.Printf("%v: %v\n", k, v)
 	}
@@ -128,22 +128,22 @@ func (d *ContrailDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*ne
 }
 
 func (d *ContrailDriver) DeleteEndpoint(req *network.DeleteEndpointRequest) error {
-	logrus.Debugln("=== DeleteEndpoint")
-	logrus.Debugln(req)
+	log.Debugln("=== DeleteEndpoint")
+	log.Debugln(req)
 	return nil
 }
 
 func (d *ContrailDriver) EndpointInfo(req *network.InfoRequest) (*network.InfoResponse, error) {
-	logrus.Debugln("=== EndpointInfo")
-	logrus.Debugln(req)
+	log.Debugln("=== EndpointInfo")
+	log.Debugln(req)
 	r := &network.InfoResponse{}
 	return r, nil
 }
 
 func (d *ContrailDriver) Join(req *network.JoinRequest) (*network.JoinResponse, error) {
-	logrus.Debugln("=== Join")
-	logrus.Debugln(req)
-	logrus.Debugln("options:")
+	log.Debugln("=== Join")
+	log.Debugln(req)
+	log.Debugln("options:")
 	for k, v := range req.Options {
 		fmt.Printf("%v: %v\n", k, v)
 	}
@@ -152,31 +152,31 @@ func (d *ContrailDriver) Join(req *network.JoinRequest) (*network.JoinResponse, 
 }
 
 func (d *ContrailDriver) Leave(req *network.LeaveRequest) error {
-	logrus.Debugln("=== Leave")
-	logrus.Debugln(req)
+	log.Debugln("=== Leave")
+	log.Debugln(req)
 	return nil
 }
 
 func (d *ContrailDriver) DiscoverNew(req *network.DiscoveryNotification) error {
-	logrus.Debugln("=== DiscoverNew")
-	logrus.Debugln(req)
+	log.Debugln("=== DiscoverNew")
+	log.Debugln(req)
 	return nil
 }
 
 func (d *ContrailDriver) DiscoverDelete(req *network.DiscoveryNotification) error {
-	logrus.Debugln("=== DiscoverDelete")
-	logrus.Debugln(req)
+	log.Debugln("=== DiscoverDelete")
+	log.Debugln(req)
 	return nil
 }
 
 func (d *ContrailDriver) ProgramExternalConnectivity(req *network.ProgramExternalConnectivityRequest) error {
-	logrus.Debugln("=== ProgramExternalConnectivity")
-	logrus.Debugln(req)
+	log.Debugln("=== ProgramExternalConnectivity")
+	log.Debugln(req)
 	return nil
 }
 
 func (d *ContrailDriver) RevokeExternalConnectivity(req *network.RevokeExternalConnectivityRequest) error {
-	logrus.Debugln("=== RevokeExternalConnectivity")
-	logrus.Debugln(req)
+	log.Debugln("=== RevokeExternalConnectivity")
+	log.Debugln(req)
 	return nil
 }

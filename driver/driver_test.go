@@ -1,16 +1,30 @@
 package driver
 
 import (
+	"flag"
 	"testing"
 	"time"
 
 	"github.com/codilime/contrail-windows-docker/common"
+	"github.com/codilime/contrail-windows-docker/controller"
 	"github.com/codilime/contrail-windows-docker/hns"
 	"github.com/docker/go-connections/sockets"
 	"github.com/docker/go-plugins-helpers/network"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+var controllerAddr string
+var controllerPort int
+var useActualController bool
+
+func init() {
+	flag.StringVar(&controllerAddr, "controllerAddr",
+		"10.7.0.54", "Contrail controller addr")
+	flag.IntVar(&controllerPort, "controllerPort", 8082, "Contrail controller port")
+	flag.BoolVar(&useActualController, "useActualController", true,
+		"Whether to use mocked controller or actual.")
+}
 
 func TestDriver(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -219,8 +233,13 @@ var _ = Describe("Contrail Network Driver", func() {
 })
 
 func startDriver() *ContrailDriver {
-	d, err := NewDriver("172.100.0.0/16", "172.100.0.1", "Ethernet0",
-		"dummy_controller_ip", 8082) // use dummy controller address because we use mocked version.
+	var c *controller.Controller
+	if useActualController {
+		c, _ = controller.NewClientAndProject("some_tenant_name", controllerAddr, controllerPort)
+	} else {
+		c, _ = controller.NewMockedClientAndProject("some_tenant_name")
+	}
+	d, err := NewDriver("172.100.0.0/16", "172.100.0.1", "Ethernet0", c)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(d.HnsID).ToNot(Equal(""))
 	return d

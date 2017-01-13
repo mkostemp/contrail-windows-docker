@@ -4,6 +4,7 @@ import (
 	"flag"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/codilime/contrail-windows-docker/controller"
 	"github.com/codilime/contrail-windows-docker/driver"
 )
 
@@ -19,10 +20,15 @@ func main() {
 	flag.Parse()
 
 	var d *driver.ContrailDriver
+	var c *controller.Controller
 	var err error
 
-	if d, err = driver.NewDriver(*subnet, *gateway, *adapter, *controllerIP,
-		*controllerPort); err != nil {
+	if c, err = controller.NewController(*controllerIP, *controllerPort); err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	if d, err = driver.NewDriver(*subnet, *gateway, *adapter, c); err != nil {
 		logrus.Error(err)
 		return
 	}
