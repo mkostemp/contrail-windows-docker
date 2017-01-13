@@ -24,6 +24,17 @@ func NewMockedClientAndProject(tenant string) (*Controller, *types.Project) {
 	return c, project
 }
 
+func NewClientAndProject(tenant, controllerAddr string, controllerPort int) (*Controller,
+	*types.Project) {
+	c, err := NewController(controllerAddr, controllerPort)
+	Expect(err).ToNot(HaveOccurred())
+
+	project, err := c.ApiClient.FindByName("project", fmt.Sprintf("%s:%s", common.DomainName,
+		tenant))
+	Expect(err).ToNot(HaveOccurred())
+	return c, project.(*types.Project)
+}
+
 func CreateMockedNetworkWithSubnet(c contrail.ApiClient, netName, subnetCIDR string,
 	project *types.Project) *types.VirtualNetwork {
 	netUUID, err := config.CreateNetworkWithSubnet(c, project.GetUuid(), netName, subnetCIDR)

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"flag"
 	"testing"
 
 	"github.com/Juniper/contrail-go-api/types"
@@ -8,6 +9,18 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+var controllerAddr string
+var controllerPort int
+var useActualController bool
+
+func init() {
+	flag.StringVar(&controllerAddr, "controllerAddr",
+		"10.7.0.54", "Contrail controller addr")
+	flag.IntVar(&controllerPort, "controllerPort", 8082, "Contrail controller port")
+	flag.BoolVar(&useActualController, "useActualController", true,
+		"Whether to use mocked controller or actual.")
+}
 
 func TestController(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -31,7 +44,11 @@ var _ = Describe("Controller", func() {
 	var project *types.Project
 
 	BeforeEach(func() {
-		client, project = NewMockedClientAndProject(tenantName)
+		if useActualController {
+			client, project = NewClientAndProject(tenantName, controllerAddr, controllerPort)
+		} else {
+			client, project = NewMockedClientAndProject(tenantName)
+		}
 	})
 
 	Describe("getting Contrail network", func() {

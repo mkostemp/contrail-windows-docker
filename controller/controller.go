@@ -6,6 +6,7 @@ import (
 
 	"github.com/Juniper/contrail-go-api"
 	"github.com/Juniper/contrail-go-api/types"
+	log "github.com/Sirupsen/logrus"
 	"github.com/codilime/contrail-windows-docker/common"
 )
 
@@ -16,10 +17,20 @@ type Controller struct {
 	ApiClient contrail.ApiClient
 }
 
-func NewController(ip string, port int) *Controller {
+func NewController(ip string, port int) (*Controller, error) {
 	client := &Controller{}
 	client.ApiClient = contrail.NewClient(ip, port)
-	return client
+
+	// TODO: use environment variables for keystone auth
+	keystone := contrail.NewKeystoneClient("http://10.7.0.54:5000/v2.0", "agatka", "admin",
+		"secret123", "")
+	err := keystone.Authenticate()
+	if err != nil {
+		log.Errorln("Keystone error:", err)
+		return nil, err
+	}
+	client.ApiClient.(*contrail.Client).SetAuthenticator(keystone)
+	return client, nil
 }
 
 func (c *Controller) GetNetwork(tenantName, networkName string) (*types.VirtualNetwork,
