@@ -6,6 +6,7 @@ import (
 
 	"github.com/Juniper/contrail-go-api"
 	"github.com/Juniper/contrail-go-api/types"
+	log "github.com/Sirupsen/logrus"
 	"github.com/codilime/contrail-windows-docker/common"
 )
 
@@ -16,10 +17,20 @@ type Controller struct {
 	ApiClient contrail.ApiClient
 }
 
-func NewController(ip string, port int) *Controller {
+func NewController(ip string, port int) (*Controller, error) {
 	client := &Controller{}
 	client.ApiClient = contrail.NewClient(ip, port)
-	return client
+
+	// TODO: use environment variables for keystone auth (JW-66)
+	keystone := contrail.NewKeystoneClient("http://10.7.0.54:5000/v2.0", "admin", "admin",
+		"secret123", "")
+	err := keystone.Authenticate()
+	if err != nil {
+		log.Errorln("Keystone error:", err)
+		return nil, err
+	}
+	client.ApiClient.(*contrail.Client).SetAuthenticator(keystone)
+	return client, nil
 }
 
 func (c *Controller) GetNetwork(tenantName, networkName string) (*types.VirtualNetwork,
@@ -53,14 +64,13 @@ func (c *Controller) GetDefaultGatewayIp(net *types.VirtualNetwork) (string, err
 }
 
 func (c *Controller) GetOrCreateInstance(tenantName, containerId string) (*types.VirtualMachine, error) {
-	name := fmt.Sprintf("%s:%s:%s", common.DomainName, tenantName, containerId)
-	instance, err := types.VirtualMachineByName(c.ApiClient, name)
+	instance, err := types.VirtualMachineByName(c.ApiClient, containerId)
 	if err == nil && instance != nil {
 		return instance, nil
 	}
 
 	instance = new(types.VirtualMachine)
-	instance.SetFQName("project", []string{common.DomainName, tenantName, containerId})
+	instance.SetName(containerId)
 	err = c.ApiClient.Create(instance)
 	if err != nil {
 		return nil, err
@@ -70,16 +80,14 @@ func (c *Controller) GetOrCreateInstance(tenantName, containerId string) (*types
 
 func (c *Controller) GetOrCreateInterface(net *types.VirtualNetwork,
 	instance *types.VirtualMachine) (*types.VirtualMachineInterface, error) {
-	instanceFQName := instance.GetFQName()
-	namespace := instanceFQName[len(instanceFQName)-2]
-	name := fmt.Sprintf("%s:%s:%s", common.DomainName, namespace, instance.GetName())
-	iface, err := types.VirtualMachineInterfaceByName(c.ApiClient, name)
+	iface, err := types.VirtualMachineInterfaceByName(c.ApiClient, instance.GetName())
 	if err == nil && iface != nil {
 		return iface, nil
 	}
 
 	iface = new(types.VirtualMachineInterface)
-	iface.SetFQName("project", []string{common.DomainName, namespace, instance.GetName()})
+	instanceFQName := instance.GetFQName()
+	iface.SetFQName("", instanceFQName)
 	err = iface.AddVirtualMachine(instance)
 	if err != nil {
 		return nil, err
@@ -105,16 +113,13 @@ func (c *Controller) GetInterfaceMac(iface *types.VirtualMachineInterface) (stri
 
 func (c *Controller) GetOrCreateInstanceIp(net *types.VirtualNetwork,
 	iface *types.VirtualMachineInterface) (*types.InstanceIp, error) {
-	ifaceFQName := iface.GetFQName()
-	tenantName := ifaceFQName[len(ifaceFQName)-2]
-	name := fmt.Sprintf("%s_%s", tenantName, iface.GetName())
-	instIp, err := types.InstanceIpByName(c.ApiClient, name)
+	instIp, err := types.InstanceIpByName(c.ApiClient, iface.GetName())
 	if err == nil && instIp != nil {
 		return instIp, nil
 	}
 
 	instIp = &types.InstanceIp{}
-	instIp.SetName(name)
+	instIp.SetName(iface.GetName())
 	err = instIp.AddVirtualNetwork(net)
 	if err != nil {
 		return nil, err

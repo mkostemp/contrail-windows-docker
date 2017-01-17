@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"flag"
 	"testing"
 
 	"github.com/Juniper/contrail-go-api/types"
@@ -8,6 +9,18 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+var controllerAddr string
+var controllerPort int
+var useActualController bool
+
+func init() {
+	flag.StringVar(&controllerAddr, "controllerAddr",
+		"10.7.0.54", "Contrail controller addr")
+	flag.IntVar(&controllerPort, "controllerPort", 8082, "Contrail controller port")
+	flag.BoolVar(&useActualController, "useActualController", true,
+		"Whether to use mocked controller or actual.")
+}
 
 func TestController(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -30,8 +43,25 @@ var _ = Describe("Controller", func() {
 	var client *Controller
 	var project *types.Project
 
+	BeforeSuite(func() {
+		if useActualController {
+			client, project = NewClientAndProject(tenantName, controllerAddr, controllerPort)
+			CleanupLingeringVM(client.ApiClient, containerID)
+		}
+	})
+
 	BeforeEach(func() {
-		client, project = NewMockedClientAndProject(tenantName)
+		if useActualController {
+			client, project = NewClientAndProject(tenantName, controllerAddr, controllerPort)
+		} else {
+			client, project = NewMockedClientAndProject(tenantName)
+		}
+	})
+
+	AfterEach(func() {
+		if useActualController {
+			CleanupLingeringVM(client.ApiClient, containerID)
+		}
 	})
 
 	Describe("getting Contrail network", func() {
@@ -44,7 +74,7 @@ var _ = Describe("Controller", func() {
 			It("returns it", func() {
 				net, err := client.GetNetwork(tenantName, networkName)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(net).To(BeEquivalentTo(testNetwork))
+				Expect(net.GetUuid()).To(Equal(testNetwork.GetUuid()))
 			})
 		})
 		Context("when network doesn't exist in Contrail", func() {
@@ -78,8 +108,14 @@ var _ = Describe("Controller", func() {
 			})
 			It("returns error", func() {
 				gwAddr, err := client.GetDefaultGatewayIp(testNetwork)
-				Expect(err).To(HaveOccurred())
-				Expect(gwAddr).To(Equal(""))
+				if useActualController {
+					Expect(gwAddr).ToNot(Equal(""))
+					Expect(err).ToNot(HaveOccurred())
+				} else {
+					// mocked controller lacks some logic here
+					Expect(gwAddr).To(Equal(""))
+					Expect(err).To(HaveOccurred())
+				}
 			})
 		})
 		Context("network doesn't have subnets", func() {
@@ -96,7 +132,7 @@ var _ = Describe("Controller", func() {
 	})
 
 	Describe("getting Contrail instance", func() {
-		Context("when instance already exists in Cotnrail", func() {
+		Context("when instance already exists in Contrail", func() {
 			var testInstance *types.VirtualMachine
 			BeforeEach(func() {
 				testInstance = CreateMockedInstance(client.ApiClient, tenantName, containerID)
@@ -105,7 +141,7 @@ var _ = Describe("Controller", func() {
 				instance, err := client.GetOrCreateInstance(tenantName, containerID)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(instance).ToNot(BeNil())
-				Expect(instance).To(BeEquivalentTo(testInstance))
+				Expect(instance.GetUuid()).To(Equal(testInstance.GetUuid()))
 			})
 		})
 		Context("when instance doesn't exist in Contrail", func() {
@@ -117,7 +153,7 @@ var _ = Describe("Controller", func() {
 				existingInst, err := types.VirtualMachineByUuid(client.ApiClient,
 					instance.GetUuid())
 				Expect(err).ToNot(HaveOccurred())
-				Expect(existingInst).To(BeEquivalentTo(instance))
+				Expect(existingInst.GetUuid()).To(Equal(instance.GetUuid()))
 			})
 		})
 	})
@@ -140,7 +176,7 @@ var _ = Describe("Controller", func() {
 				iface, err := client.GetOrCreateInterface(testNetwork, testInstance)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(iface).ToNot(BeNil())
-				Expect(iface).To(BeEquivalentTo(testInterface))
+				Expect(iface.GetUuid()).To(Equal(testInterface.GetUuid()))
 			})
 		})
 		Context("when vif doesn't exist in Contrail", func() {
@@ -152,7 +188,7 @@ var _ = Describe("Controller", func() {
 				existingIface, err := types.VirtualMachineInterfaceByUuid(client.ApiClient,
 					iface.GetUuid())
 				Expect(err).ToNot(HaveOccurred())
-				Expect(existingIface).To(BeEquivalentTo(iface))
+				Expect(existingIface.GetUuid()).To(Equal(iface.GetUuid()))
 			})
 		})
 	})
@@ -208,9 +244,9 @@ var _ = Describe("Controller", func() {
 				instanceIP, err := client.GetOrCreateInstanceIp(testNetwork, testInterface)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(instanceIP).ToNot(BeNil())
-				Expect(instanceIP).To(BeEquivalentTo(testInstanceIP))
+				Expect(instanceIP.GetUuid()).To(Equal(testInstanceIP.GetUuid()))
 
-				// TODO: check if got an IP address
+				// TODO: check if got an IP address (instance_ip_address)
 
 			})
 		})
@@ -222,9 +258,9 @@ var _ = Describe("Controller", func() {
 
 				existingIP, err := types.InstanceIpByUuid(client.ApiClient, instanceIP.GetUuid())
 				Expect(err).ToNot(HaveOccurred())
-				Expect(existingIP).To(BeEquivalentTo(instanceIP))
+				Expect(existingIP.GetUuid()).To(Equal(instanceIP.GetUuid()))
 
-				// TODO: check if got an IP address
+				// TODO: check if got an IP address (instance_ip_address)
 			})
 		})
 	})
