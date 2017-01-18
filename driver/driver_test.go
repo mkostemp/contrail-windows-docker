@@ -14,11 +14,14 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var netAdapter string
 var controllerAddr string
 var controllerPort int
 var useActualController bool
 
 func init() {
+	flag.StringVar(&netAdapter, "netAdapter", "Ethernet0",
+		"Network adapter to connect HNS switch to")
 	flag.StringVar(&controllerAddr, "controllerAddr",
 		"10.7.0.54", "Contrail controller addr")
 	flag.IntVar(&controllerPort, "controllerPort", 8082, "Contrail controller port")
@@ -239,7 +242,7 @@ func startDriver() *ContrailDriver {
 	} else {
 		c, _ = controller.NewMockedClientAndProject("some_tenant_name")
 	}
-	d, err := NewDriver("172.100.0.0/16", "172.100.0.1", "Ethernet0", c)
+	d, err := NewDriver("172.100.0.0/16", "172.100.0.1", netAdapter, c)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(d.HnsID).ToNot(Equal(""))
 	return d
