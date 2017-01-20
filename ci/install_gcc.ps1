@@ -19,5 +19,5 @@ echo "Adding C:\gcc\bin to path"
 $Env:Path += ";C:\gcc\bin"
 $p = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
 $p = $p.split(';') | sort -unique
-[system.String]::Join(";", $p)
+$p = [system.String]::Join(";", $p)
 [Environment]::SetEnvironmentVariable("Path", $p+";C:\gcc\bin", [EnvironmentVariableTarget]::Machine)

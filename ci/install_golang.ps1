@@ -34,6 +34,6 @@ $Env:Path += ";$goroot\bin;$gopath\bin"
 
 $p = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
 $p = $p.split(';') | sort -unique
-[system.String]::Join(";", $p)
+$p = [system.String]::Join(";", $p)
 
 [Environment]::SetEnvironmentVariable("Path", $p+";$goroot\bin;$gopath\bin", [EnvironmentVariableTarget]::Machine)
