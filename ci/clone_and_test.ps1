@@ -20,8 +20,9 @@ cd C:\go_workspace\bin
 go build github.com/codilime/contrail-windows-docker
 
 echo "Downloading test framework"
-go get github.com/onsi/ginkgo/ginkgo
-go get github.com/onsi/gomega
+go get -u github.com/onsi/ginkgo/ginkgo
+go get -u github.com/onsi/gomega
+go get -u github.com/onsi/ginkgo/extensions/table
 
 echo "Running tests"
 cd C:\go_workspace\src\github.com\codilime\contrail-windows-docker
