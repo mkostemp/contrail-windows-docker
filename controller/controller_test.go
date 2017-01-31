@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/Juniper/contrail-go-api/types"
+	log "github.com/Sirupsen/logrus"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -20,6 +21,8 @@ func init() {
 	flag.IntVar(&controllerPort, "controllerPort", 8082, "Contrail controller port")
 	flag.BoolVar(&useActualController, "useActualController", true,
 		"Whether to use mocked controller or actual.")
+
+	log.SetLevel(log.DebugLevel)
 }
 
 func TestController(t *testing.T) {
@@ -245,9 +248,12 @@ var _ = Describe("Controller", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(instanceIP).ToNot(BeNil())
 				Expect(instanceIP.GetUuid()).To(Equal(testInstanceIP.GetUuid()))
+				Expect(instanceIP.GetInstanceIpAddress()).ToNot(Equal(""))
 
-				// TODO: check if got an IP address (instance_ip_address)
-
+				existingIP, err := types.InstanceIpByUuid(client.ApiClient, instanceIP.GetUuid())
+				Expect(err).ToNot(HaveOccurred())
+				Expect(existingIP.GetUuid()).To(Equal(instanceIP.GetUuid()))
+				Expect(instanceIP.GetInstanceIpAddress()).ToNot(Equal(""))
 			})
 		})
 		Context("when instance IP doesn't exist in Contrail", func() {
@@ -255,12 +261,12 @@ var _ = Describe("Controller", func() {
 				instanceIP, err := client.GetOrCreateInstanceIp(testNetwork, testInterface)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(instanceIP).ToNot(BeNil())
+				Expect(instanceIP.GetInstanceIpAddress()).ToNot(Equal(""))
 
 				existingIP, err := types.InstanceIpByUuid(client.ApiClient, instanceIP.GetUuid())
 				Expect(err).ToNot(HaveOccurred())
 				Expect(existingIP.GetUuid()).To(Equal(instanceIP.GetUuid()))
-
-				// TODO: check if got an IP address (instance_ip_address)
+				Expect(instanceIP.GetInstanceIpAddress()).ToNot(Equal(""))
 			})
 		})
 	})

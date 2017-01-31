@@ -75,7 +75,12 @@ func (c *Controller) GetOrCreateInstance(tenantName, containerId string) (*types
 	if err != nil {
 		return nil, err
 	}
-	return instance, nil
+
+	createdInstance, err := types.VirtualMachineByName(c.ApiClient, containerId)
+	if err != nil {
+		return nil, err
+	}
+	return createdInstance, nil
 }
 
 func (c *Controller) GetOrCreateInterface(net *types.VirtualNetwork,
@@ -100,7 +105,12 @@ func (c *Controller) GetOrCreateInterface(net *types.VirtualNetwork,
 	if err != nil {
 		return nil, err
 	}
-	return iface, nil
+
+	createdIface, err := types.VirtualMachineInterfaceByName(c.ApiClient, instance.GetName())
+	if err != nil {
+		return nil, err
+	}
+	return createdIface, nil
 }
 
 func (c *Controller) GetInterfaceMac(iface *types.VirtualMachineInterface) (string, error) {
@@ -132,5 +142,10 @@ func (c *Controller) GetOrCreateInstanceIp(net *types.VirtualNetwork,
 	if err != nil {
 		return nil, err
 	}
-	return instIp, nil
+
+	allocatedIP, err := types.InstanceIpByUuid(c.ApiClient, instIp.GetUuid())
+	if err != nil {
+		return nil, err
+	}
+	return allocatedIP, nil
 }
