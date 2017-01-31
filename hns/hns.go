@@ -2,7 +2,6 @@ package hns
 
 import (
 	"encoding/json"
-	"errors"
 
 	"github.com/Microsoft/hcsshim"
 	log "github.com/Sirupsen/logrus"
@@ -66,7 +65,7 @@ func GetHNSNetworkByName(name string) (*hcsshim.HNSNetwork, error) {
 			return &n, nil
 		}
 	}
-	return nil, errors.New("HNS network not found by name")
+	return nil, nil
 }
 
 func CreateHNSEndpoint(configuration *hcsshim.HNSEndpoint) (string, error) {
@@ -102,4 +101,12 @@ func GetHNSEndpoint(endpointID string) (*hcsshim.HNSEndpoint, error) {
 		return nil, err
 	}
 	return endpoint, nil
+}
+
+func ListHNSEndpoints() ([]hcsshim.HNSEndpoint, error) {
+	endpoints, err := hcsshim.HNSListEndpointRequest("GET", "", "")
+	if err != nil {
+		return nil, err
+	}
+	return endpoints, nil
 }
