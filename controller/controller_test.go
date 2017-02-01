@@ -253,7 +253,6 @@ var _ = Describe("Controller", func() {
 				existingIP, err := types.InstanceIpByUuid(client.ApiClient, instanceIP.GetUuid())
 				Expect(err).ToNot(HaveOccurred())
 				Expect(existingIP.GetUuid()).To(Equal(instanceIP.GetUuid()))
-				Expect(instanceIP.GetInstanceIpAddress()).ToNot(Equal(""))
 			})
 		})
 		Context("when instance IP doesn't exist in Contrail", func() {
@@ -266,7 +265,6 @@ var _ = Describe("Controller", func() {
 				existingIP, err := types.InstanceIpByUuid(client.ApiClient, instanceIP.GetUuid())
 				Expect(err).ToNot(HaveOccurred())
 				Expect(existingIP.GetUuid()).To(Equal(instanceIP.GetUuid()))
-				Expect(instanceIP.GetInstanceIpAddress()).ToNot(Equal(""))
 			})
 		})
 	})
