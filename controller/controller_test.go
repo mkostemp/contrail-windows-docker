@@ -248,7 +248,8 @@ var _ = Describe("Controller", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(instanceIP).ToNot(BeNil())
 				Expect(instanceIP.GetUuid()).To(Equal(testInstanceIP.GetUuid()))
-				Expect(instanceIP.GetInstanceIpAddress()).ToNot(Equal(""))
+				Expect(instanceIP.GetInstanceIpAddress()).To(Equal(
+					testInstanceIP.GetInstanceIpAddress()))
 
 				existingIP, err := types.InstanceIpByUuid(client.ApiClient, instanceIP.GetUuid())
 				Expect(err).ToNot(HaveOccurred())
