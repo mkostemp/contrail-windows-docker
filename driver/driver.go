@@ -179,7 +179,7 @@ func (d *ContrailDriver) DeleteNetwork(req *network.DeleteNetworkRequest) error 
 	if err != nil {
 		return err
 	}
-	d.hnsMgr.DeleteNetwork(tenant, netName)
+	err = d.hnsMgr.DeleteNetwork(tenant, netName)
 	if err != nil {
 		return err
 	}

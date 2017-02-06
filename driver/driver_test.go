@@ -12,7 +12,6 @@ import (
 	"net"
 
 	"github.com/Juniper/contrail-go-api/types"
-	"github.com/Microsoft/hcsshim"
 	log "github.com/Sirupsen/logrus"
 	"github.com/codilime/contrail-windows-docker/common"
 	"github.com/codilime/contrail-windows-docker/controller"
@@ -246,10 +245,6 @@ var _ = Describe("Contrail Network Driver", func() {
 								_, err = hns.GetHNSNetwork(hnsNetID)
 								Expect(err).To(HaveOccurred())
 							})
-							It("responds with nil", func() {
-								err := contrailDriver.DeleteNetwork(req)
-								Expect(err).ToNot(HaveOccurred())
-							})
 						})
 
 						Context("network has active endpoints", func() {
@@ -278,7 +273,6 @@ var _ = Describe("Contrail Network Driver", func() {
 				Context("given a Docker Contrail network", func() {
 
 					dockerNetID := ""
-					var endpointsBefore []hcsshim.HNSEndpoint
 					var docker *dockerClient.Client
 
 					BeforeEach(func() {
@@ -293,9 +287,6 @@ var _ = Describe("Contrail Network Driver", func() {
 							contrailController.ApiClient, networkName, subnetCIDR, project)
 
 						dockerNetID = createDummyDockerNetwork(tenantName, networkName)
-
-						endpointsBefore, err = hns.ListHNSEndpoints()
-						Expect(err).ToNot(HaveOccurred())
 					})
 
 					AfterEach(func() {
@@ -305,15 +296,13 @@ var _ = Describe("Contrail Network Driver", func() {
 						endpoints, err := hns.ListHNSEndpoints()
 						Expect(err).ToNot(HaveOccurred())
 						for _, e := range endpoints {
-							for _, originalEndpoint := range endpointsBefore {
-								if e.Id != originalEndpoint.Id {
-									// don't clean up endpoints that weren't created during tests.
-									err = hns.DeleteHNSEndpoint(e.Id)
-									Expect(len(endpointsBefore)).ToNot(Equal(len(endpoints)))
-									Expect(err).ToNot(HaveOccurred())
-								}
-							}
+							err = hns.DeleteHNSEndpoint(e.Id)
+							Expect(err).ToNot(HaveOccurred())
 						}
+
+						endpointsAfter, err := hns.ListHNSEndpoints()
+						Expect(err).ToNot(HaveOccurred())
+						Expect(endpointsAfter).To(BeEmpty())
 
 						err = docker.NetworkRemove(context.Background(), dockerNetID)
 						Expect(err).ToNot(HaveOccurred())
@@ -401,21 +390,14 @@ var _ = Describe("Contrail Network Driver", func() {
 
 							endpoints, err := hns.ListHNSEndpoints()
 							Expect(err).ToNot(HaveOccurred())
-							Expect(len(endpointsBefore)).ToNot(Equal(len(endpoints)))
+							Expect(endpoints).ToNot(BeEmpty())
 
-							var ourEndpoint *hcsshim.HNSEndpoint
-							ourEndpoint = nil
-							for _, ep := range endpoints {
-								if _, exists := resp.NetworkSettings.Networks[networkName]; exists {
-									ourEndpoint = &ep
-									break
-								}
-							}
-							Expect(ourEndpoint).ToNot(BeNil(), "Endpoint not found")
-							Expect(ourEndpoint.IPAddress).To(Equal(net.ParseIP(ip)))
+							ep := endpoints[0]
+							Expect(ep).ToNot(BeNil(), "Endpoint not found")
+							Expect(ep.IPAddress).To(Equal(net.ParseIP(ip)))
 							formattedMac := strings.Replace(strings.ToUpper(mac), ":", "-", -1)
-							Expect(ourEndpoint.MacAddress).To(Equal(formattedMac))
-							Expect(ourEndpoint.GatewayAddress).To(Equal(gw))
+							Expect(ep.MacAddress).To(Equal(formattedMac))
+							Expect(ep.GatewayAddress).To(Equal(gw))
 						})
 
 						PIt("configures vRouter agent", func() {})
