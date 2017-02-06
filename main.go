@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"os"
+	"os/signal"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/codilime/contrail-windows-docker/controller"
@@ -35,4 +37,8 @@ func main() {
 		log.Error(err)
 	}
 	defer d.StopServing()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt)
+	<-sigChan
 }
