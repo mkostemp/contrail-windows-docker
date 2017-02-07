@@ -41,17 +41,18 @@ const (
 	containerID  = "12345678901"
 )
 
+var _ = BeforeSuite(func() {
+	if useActualController {
+		// this cleans up
+		client, _ := NewClientAndProject(tenantName, controllerAddr, controllerPort)
+		CleanupLingeringVM(client.ApiClient, containerID)
+	}
+})
+
 var _ = Describe("Controller", func() {
 
 	var client *Controller
 	var project *types.Project
-
-	BeforeSuite(func() {
-		if useActualController {
-			client, project = NewClientAndProject(tenantName, controllerAddr, controllerPort)
-			CleanupLingeringVM(client.ApiClient, containerID)
-		}
-	})
 
 	BeforeEach(func() {
 		if useActualController {
@@ -268,5 +269,35 @@ var _ = Describe("Controller", func() {
 				Expect(existingIP.GetUuid()).To(Equal(instanceIP.GetUuid()))
 			})
 		})
+	})
+
+})
+
+var _ = Describe("Cleaning up", func() {
+	Specify("cleaning up resources that are referred to by two other doesn't fail", func() {
+		var client *Controller
+		var project *types.Project
+
+		if useActualController {
+			client, project = NewClientAndProject(tenantName, controllerAddr, controllerPort)
+		} else {
+			client, project = NewMockedClientAndProject(tenantName)
+		}
+
+		// instanceIP and VMI are both referred to by virtual network, and instanceIP refers
+		// to VMI
+		testNetwork := CreateMockedNetworkWithSubnet(client.ApiClient, networkName, subnetCIDR,
+			project)
+		testInstance := CreateMockedInstance(client.ApiClient, tenantName, containerID)
+		testInterface := CreateMockedInterface(client.ApiClient, testInstance, testNetwork)
+		_ = CreateMockedInstanceIP(client.ApiClient, tenantName, testInterface,
+			testNetwork)
+
+		// shouldn't error when creating new client and project
+		if useActualController {
+			client, project = NewClientAndProject(tenantName, controllerAddr, controllerPort)
+		} else {
+			client, project = NewMockedClientAndProject(tenantName)
+		}
 	})
 })

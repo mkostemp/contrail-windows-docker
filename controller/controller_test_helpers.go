@@ -153,10 +153,9 @@ func CleanupLingeringVM(c contrail.ApiClient, containerID string) {
 
 func deleteElement(c contrail.ApiClient, parent contrail.IObject) {
 	log.Debugln("Deleting", parent.GetType(), parent.GetUuid())
-	err := c.Delete(parent)
-	if err != nil {
+	for err := c.Delete(parent); err != nil; err = c.Delete(parent) {
 		if strings.Contains(err.Error(), "404 Resource") {
-			return
+			break
 		} else if strings.Contains(err.Error(), "409 Conflict") {
 			msg := err.Error()
 			// example error message when object has children:
@@ -182,7 +181,5 @@ func deleteElement(c contrail.ApiClient, parent contrail.IObject) {
 				deleteElement(c, child)
 			}
 		}
-		err = c.Delete(parent)
-		Expect(err).ToNot(HaveOccurred())
 	}
 }
