@@ -18,7 +18,7 @@ const (
 
 // PluginSpecDir returns path to directory where docker daemon looks for plugin spec files.
 func PluginSpecDir() string {
-	return ([]string{filepath.Join(os.Getenv("programdata"), "docker", "plugins")})[0]
+	return filepath.Join(os.Getenv("programdata"), "docker", "plugins")
 }
 
 // PluginSpecFilePath returns path to plugin spec file.

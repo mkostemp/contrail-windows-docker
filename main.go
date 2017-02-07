@@ -28,11 +28,7 @@ func main() {
 		return
 	}
 
-	if d, err = driver.NewDriver(*adapter, c); err != nil {
-		log.Error(err)
-		return
-	}
-
+	d = driver.NewDriver(*adapter, c)
 	if err = d.StartServing(); err != nil {
 		log.Error(err)
 	}

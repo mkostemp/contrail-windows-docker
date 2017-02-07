@@ -518,8 +518,7 @@ func startDriver() (*ContrailDriver, *controller.Controller, *types.Project) {
 	} else {
 		c, p = controller.NewMockedClientAndProject(tenantName)
 	}
-	d, err := NewDriver("Ethernet0", c)
-	Expect(err).ToNot(HaveOccurred())
+	d := NewDriver("Ethernet0", c)
 
 	return d, c, p
 }

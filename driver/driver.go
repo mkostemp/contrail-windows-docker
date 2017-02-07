@@ -32,14 +32,14 @@ type ContrailDriver struct {
 	listener       net.Listener
 }
 
-func NewDriver(adapter string, c *controller.Controller) (*ContrailDriver, error) {
+func NewDriver(adapter string, c *controller.Controller) *ContrailDriver {
 
 	d := &ContrailDriver{
 		controller:     c,
 		hnsMgr:         &hnsManager.HNSManager{},
 		networkAdapter: adapter,
 	}
-	return d, nil
+	return d
 }
 
 func (d *ContrailDriver) StartServing() error {
