@@ -15,12 +15,12 @@ func HardResetHNS() error {
 	log.Debugln("Removing NAT")
 	if err := exec.Command("powershell", "Get-NetNat", "|",
 		"Remove-NetNat").Run(); err != nil {
-		log.Debugln("Could not remove container network.")
+		log.Debugln("Could not remove nat network.")
 	}
 	log.Debugln("Removing container networks")
 	if err := exec.Command("powershell", "Get-ContainerNetwork", "|",
 		"Remove-ContainerNetwork", "-Force").Run(); err != nil {
-		log.Debugln("Could not remove nat network.")
+		log.Debugln("Could not remove container network.")
 	}
 	log.Debugln("Stopping HNS")
 	if err := exec.Command("powershell", "Stop-Service", "hns").Run(); err != nil {
@@ -30,7 +30,6 @@ func HardResetHNS() error {
 
 	programData := os.Getenv("programdata")
 	if programData == "" {
-		log.Errorln("Invalid program data env variable")
 		return errors.New("Invalid program data env variable")
 	}
 	hnsDataDir := filepath.Join(programData, "Microsoft", "Windows", "HNS", "HNS.data")

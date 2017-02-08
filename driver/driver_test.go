@@ -65,6 +65,7 @@ const (
 	networkName = "test_net"
 	subnetCIDR  = "10.10.10.0/24"
 	defaultGW   = "10.10.10.1"
+	timeout     = time.Second * 5
 )
 
 var _ = Describe("Contrail Network Driver", func() {
@@ -77,14 +78,14 @@ var _ = Describe("Contrail Network Driver", func() {
 		err := contrailDriver.StartServing()
 		Expect(err).ToNot(HaveOccurred())
 
-		d, err := sockets.DialPipe("//./pipe/"+common.DriverName, time.Second*3)
+		d, err := sockets.DialPipe("//./pipe/"+common.DriverName, timeout)
 		Expect(err).ToNot(HaveOccurred())
 		d.Close()
 
 		err = contrailDriver.StopServing()
 		Expect(err).ToNot(HaveOccurred())
 
-		_, err = sockets.DialPipe("//./pipe/"+common.DriverName, time.Second*3)
+		_, err = sockets.DialPipe("//./pipe/"+common.DriverName, timeout)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -331,9 +332,11 @@ var _ = Describe("Contrail Network Driver", func() {
 						})
 
 						AfterEach(func() {
-							timeout := time.Second * 5
+							// ContainerStop needs reference to timeout, and I can't use ref
+							// to const value.
+							timeoutT := timeout
 							err := docker.ContainerStop(context.Background(), containerID,
-								&timeout)
+								&timeoutT)
 							Expect(err).ToNot(HaveOccurred())
 
 							err = docker.ContainerRemove(context.Background(), containerID,

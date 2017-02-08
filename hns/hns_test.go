@@ -30,8 +30,6 @@ func TestHNS(t *testing.T) {
 var _ = BeforeSuite(func() {
 	err := common.HardResetHNS()
 	Expect(err).ToNot(HaveOccurred())
-	err = common.HardResetHNS()
-	Expect(err).ToNot(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {
@@ -129,7 +127,7 @@ var _ = Describe("HNS wrapper", func() {
 		Specify("HNS endpoint operations work", func() {
 			hnsEndpointConfig := &hcsshim.HNSEndpoint{
 				VirtualNetwork: testHnsNetID,
-				Name:           "dupadupa",
+				Name:           "ep_name",
 			}
 
 			endpointID, err := CreateHNSEndpoint(hnsEndpointConfig)
