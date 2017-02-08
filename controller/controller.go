@@ -44,26 +44,37 @@ func (c *Controller) GetNetwork(tenantName, networkName string) (*types.VirtualN
 	return net, nil
 }
 
-func (c *Controller) GetDefaultGatewayIp(net *types.VirtualNetwork) (string, error) {
+func (c *Controller) GetIpamSubnet(net *types.VirtualNetwork) (*types.IpamSubnetType, error) {
 	ipamReferences, err := net.GetNetworkIpamRefs()
 	if err != nil {
 		log.Errorf("Failed to get ipam references: %v", err)
-		return "", err
+		return nil, err
 	}
 	if len(ipamReferences) == 0 {
-		log.Errorf("Ipam references list is empty")
-		return "", errors.New("Ipam references list is empty")
+		err = errors.New("Ipam references list is empty")
+		log.Error(err)
+		return nil, err
 	}
 	attribute := ipamReferences[0].Attr
 	ipamSubnets := attribute.(types.VnSubnetsType).IpamSubnets
 	if len(ipamSubnets) == 0 {
-		log.Errorf("Ipam subnets list is empty")
-		return "", errors.New("Ipam subnets list is empty")
+		err = errors.New("Ipam subnets list is empty")
+		log.Error(err)
+		return nil, err
 	}
-	gw := ipamSubnets[0].DefaultGateway
+	return &ipamSubnets[0], nil
+}
+
+func (c *Controller) GetDefaultGatewayIp(net *types.VirtualNetwork) (string, error) {
+	subnet, err := c.GetIpamSubnet(net)
+	if err != nil {
+		return "", err
+	}
+	gw := subnet.DefaultGateway
 	if gw == "" {
-		log.Errorf("Default GW is empty")
-		return "", errors.New("Default GW is empty")
+		err = errors.New("Default GW is empty")
+		log.Error(err)
+		return "", err
 	}
 	return gw, nil
 }
@@ -127,8 +138,9 @@ func (c *Controller) GetOrCreateInterface(net *types.VirtualNetwork,
 func (c *Controller) GetInterfaceMac(iface *types.VirtualMachineInterface) (string, error) {
 	macs := iface.GetVirtualMachineInterfaceMacAddresses()
 	if len(macs.MacAddress) == 0 {
-		log.Errorf("Retreived empty MAC list")
-		return "", errors.New("Empty MAC list")
+		err := errors.New("Empty MAC list")
+		log.Error(err)
+		return "", err
 	}
 	return macs.MacAddress[0], nil
 }

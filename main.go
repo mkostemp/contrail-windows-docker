@@ -2,15 +2,15 @@ package main
 
 import (
 	"flag"
+	"os"
+	"os/signal"
 
-	"github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	"github.com/codilime/contrail-windows-docker/controller"
 	"github.com/codilime/contrail-windows-docker/driver"
 )
 
 func main() {
-	var subnet = flag.String("subnet", "172.117.0.0/16", "subnet in CIDR format for HNS")
-	var gateway = flag.String("gateway", "172.117.0.1", "default gateway IP for HNS")
 	var adapter = flag.String("adapter", "Ethernet0",
 		"net adapter for HNS switch, must be physical")
 	var controllerIP = flag.String("controllerIP", "127.0.0.1",
@@ -24,21 +24,17 @@ func main() {
 	var err error
 
 	if c, err = controller.NewController(*controllerIP, *controllerPort); err != nil {
-		logrus.Error(err)
+		log.Error(err)
 		return
 	}
 
-	if d, err = driver.NewDriver(*subnet, *gateway, *adapter, c); err != nil {
-		logrus.Error(err)
-		return
+	d = driver.NewDriver(*adapter, c)
+	if err = d.StartServing(); err != nil {
+		log.Error(err)
 	}
+	defer d.StopServing()
 
-	if err = d.Serve(); err != nil {
-		logrus.Error(err)
-		return
-	}
-
-	if err = d.Teardown(); err != nil {
-		logrus.Error(err)
-	}
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt)
+	<-sigChan
 }

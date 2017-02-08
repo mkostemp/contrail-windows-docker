@@ -90,7 +90,7 @@ var _ = Describe("Controller", func() {
 		})
 	})
 
-	Describe("getting Contrail default gateway IP", func() {
+	Describe("getting Contrail subnet info", func() {
 		Context("network has subnet with default gateway", func() {
 			var testNetwork *types.VirtualNetwork
 			BeforeEach(func() {
@@ -98,10 +98,16 @@ var _ = Describe("Controller", func() {
 				AddSubnetWithDefaultGateway(client.ApiClient, subnetPrefix, defaultGW,
 					subnetMask, testNetwork)
 			})
-			It("returns gateway IP", func() {
+			Specify("getting default gw IP works", func() {
 				gwAddr, err := client.GetDefaultGatewayIp(testNetwork)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(gwAddr).ToNot(Equal(""))
+			})
+			Specify("getting subnet prefix and prefix len works", func() {
+				ipam, err := client.GetIpamSubnet(testNetwork)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ipam.Subnet.IpPrefix).To(Equal(subnetPrefix))
+				Expect(ipam.Subnet.IpPrefixLen).To(Equal(subnetMask))
 			})
 		})
 		Context("network has subnet without default gateway", func() {
@@ -110,7 +116,7 @@ var _ = Describe("Controller", func() {
 				testNetwork = CreateMockedNetworkWithSubnet(client.ApiClient, networkName,
 					subnetCIDR, project)
 			})
-			It("returns error", func() {
+			Specify("getting default gw IP returns error", func() {
 				gwAddr, err := client.GetDefaultGatewayIp(testNetwork)
 				if useActualController {
 					Expect(gwAddr).ToNot(Equal(""))
@@ -121,16 +127,27 @@ var _ = Describe("Controller", func() {
 					Expect(err).To(HaveOccurred())
 				}
 			})
+			Specify("getting subnet prefix and prefix len works", func() {
+				ipam, err := client.GetIpamSubnet(testNetwork)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ipam.Subnet.IpPrefix).To(Equal(subnetPrefix))
+				Expect(ipam.Subnet.IpPrefixLen).To(Equal(subnetMask))
+			})
 		})
 		Context("network doesn't have subnets", func() {
 			var testNetwork *types.VirtualNetwork
 			BeforeEach(func() {
 				testNetwork = CreateMockedNetwork(client.ApiClient, networkName, project)
 			})
-			It("returns error", func() {
+			Specify("getting default gw IP returns error", func() {
 				gwAddr, err := client.GetDefaultGatewayIp(testNetwork)
 				Expect(err).To(HaveOccurred())
 				Expect(gwAddr).To(Equal(""))
+			})
+			Specify("getting subnet prefix and prefix len returns error", func() {
+				ipam, err := client.GetIpamSubnet(testNetwork)
+				Expect(err).To(HaveOccurred())
+				Expect(ipam).To(BeNil())
 			})
 		})
 	})
