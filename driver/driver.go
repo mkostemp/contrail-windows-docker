@@ -326,7 +326,38 @@ func (d *ContrailDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*ne
 func (d *ContrailDriver) DeleteEndpoint(req *network.DeleteEndpointRequest) error {
 	log.Debugln("=== DeleteEndpoint")
 	log.Debugln(req)
-	return nil
+
+	meta, err := d.networkMetaFromDockerNetwork(req.NetworkID)
+	if err != nil {
+		return err
+	}
+
+	// TODO JW-187.
+	// We need something like:
+	// containerID := req.Options["vmname"]
+	containerID := req.EndpointID
+
+	contrailInstance, err := d.controller.GetOrCreateInstance(meta.tenant, containerID)
+	if err != nil {
+		log.Warn("When handling DeleteEndpoint, Contrail vm instance wasn't found")
+	} else {
+		err = d.controller.DeleteElementRecursive(contrailInstance)
+		if err != nil {
+			log.Warn("When handling DeleteEndpoint, failed to remove Contrail vm instance")
+		}
+	}
+
+	hnsEpName := req.EndpointID
+	epToDelete, err := hns.GetHNSEndpointByName(hnsEpName)
+	if err != nil {
+		return err
+	}
+	if epToDelete == nil {
+		log.Warn("When handling DeleteEndpoint, couldn't find HNS endpoint to delete")
+		return nil
+	}
+
+	return hns.DeleteHNSEndpoint(epToDelete.Id)
 }
 
 func (d *ContrailDriver) EndpointInfo(req *network.InfoRequest) (*network.InfoResponse, error) {
