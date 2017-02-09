@@ -108,9 +108,9 @@ var _ = Describe("Contrail Network Driver", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// make sure docker knows about our driver by creating a network
-		controller.CreateMockedNetworkWithSubnet(
-			contrailController.ApiClient, networkName, subnetCIDR, project)
-		_ = createDummyDockerNetwork(tenantName, networkName)
+		_ = createContrailNetwork(contrailController)
+		docker := getDockerClient()
+		_ = createValidDockerNetwork(docker)
 
 		err = contrailDriver.StopServing()
 		Expect(err).ToNot(HaveOccurred())
@@ -184,8 +184,7 @@ var _ = Describe("Contrail Network Driver", func() {
 
 				Context("tenant and subnet exist in Contrail", func() {
 					BeforeEach(func() {
-						controller.CreateMockedNetworkWithSubnet(contrailController.ApiClient,
-							networkName, subnetCIDR, project)
+						_ = createContrailNetwork(contrailController)
 
 						genericOptions["network"] = networkName
 						genericOptions["tenant"] = tenantName
@@ -209,7 +208,7 @@ var _ = Describe("Contrail Network Driver", func() {
 				})
 			})
 
-			PContext("on AllocateNetwork", func() {
+			Context("on AllocateNetwork", func() {
 				It("responds with not implemented error", func() {
 					req := network.AllocateNetworkRequest{}
 					_, err := contrailDriver.AllocateNetwork(&req)
@@ -217,51 +216,80 @@ var _ = Describe("Contrail Network Driver", func() {
 				})
 			})
 
-			PContext("on DeleteNetwork", func() {
+			Context("on DeleteNetwork", func() {
 
-				Context("docker network has invalid tenant and network name options", func() {})
+				dockerNetID := ""
+				var docker *dockerClient.Client
+				var contrailNet *types.VirtualNetwork
 
-				Context("docker network exists with valid tenant and net name", func() {
-					var dockerNetID string
-					var req *network.DeleteNetworkRequest
+				BeforeEach(func() {
+					err := contrailDriver.StartServing()
+					Expect(err).ToNot(HaveOccurred())
+
+					contrailNet = createContrailNetwork(contrailController)
+					docker = getDockerClient()
+					dockerNetID = createValidDockerNetwork(docker)
+				})
+
+				AfterEach(func() {
+					err := contrailDriver.StopServing()
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				assertRemovesHNSNet := func() {
+					resp, err := contrailDriver.hnsMgr.GetNetwork(tenantName, networkName)
+					Expect(err).To(HaveOccurred())
+					Expect(resp).To(BeNil())
+				}
+
+				assertRemovesDockerNet := func() {
+					_, err := docker.NetworkInspect(context.Background(), dockerNetID)
+					Expect(err).To(HaveOccurred())
+				}
+
+				assertDoesNotRemoveContrailNet := func() {
+					net, err := types.VirtualNetworkByName(contrailController.ApiClient,
+						fmt.Sprintf("%s:%s:%s", common.DomainName, tenantName,
+							networkName))
+					Expect(err).ToNot(HaveOccurred())
+					Expect(net).ToNot(BeNil())
+				}
+
+				Context("docker network, Contrail network and HNS network are fine", func() {
 					BeforeEach(func() {
-						dockerNetID = createDummyDockerNetwork(tenantName, networkName)
-						req = &network.DeleteNetworkRequest{
-							NetworkID: dockerNetID,
-						}
+						err := removeDockerNetwork(docker, dockerNetID)
+						Expect(err).ToNot(HaveOccurred())
 					})
+					It("removes HNS net", assertRemovesHNSNet)
+					It("removes docker net", assertRemovesDockerNet)
+					It("does not remove Contrail net", assertDoesNotRemoveContrailNet)
+				})
 
-					Context("HNS network exists", func() {
-						var hnsNetID string
-						BeforeEach(func() {
-							hnsNetID = hns.MockHNSNetwork(networkName, netAdapter, subnetCIDR,
-								defaultGW)
-							_, err := hns.GetHNSNetwork(hnsNetID)
-							Expect(err).ToNot(HaveOccurred())
-						})
-						Context("network has no active endpoints", func() {
-							It("removes HNS net", func() {
-								err := contrailDriver.DeleteNetwork(req)
-								Expect(err).ToNot(HaveOccurred())
-								_, err = hns.GetHNSNetwork(hnsNetID)
-								Expect(err).To(HaveOccurred())
-							})
-						})
-
-						Context("network has active endpoints", func() {
-							BeforeEach(func() {
-								hns.MockHNSEndpoint(hnsNetID)
-							})
-							It("responds with error", func() {
-								err := contrailDriver.DeleteNetwork(req)
-								Expect(err).To(HaveOccurred())
-							})
-						})
+				Context("HNS network doesn't exist", func() {
+					// for example, HNS was hard-reset while docker wasn't.
+					BeforeEach(func() {
+						contrailDriver.hnsMgr.DeleteNetwork(tenantName, networkName)
+						err := removeDockerNetwork(docker, dockerNetID)
+						Expect(err).ToNot(HaveOccurred())
 					})
+					It("removes docker net", assertRemovesDockerNet)
+					It("does not remove Contrail net", assertDoesNotRemoveContrailNet)
+				})
+
+				Context("Contrail network doesn't exist", func() {
+					// for example, somebody deleted Contrail network before removing docker/hns
+					BeforeEach(func() {
+						err := contrailController.DeleteElementRecursive(contrailNet)
+						Expect(err).ToNot(HaveOccurred())
+						err = removeDockerNetwork(docker, dockerNetID)
+						Expect(err).ToNot(HaveOccurred())
+					})
+					It("removes HNS net", assertRemovesHNSNet)
+					It("removes docker net", assertRemovesDockerNet)
 				})
 			})
 
-			PContext("on FreeNetwork", func() {
+			Context("on FreeNetwork", func() {
 				It("responds with not implemented error", func() {
 					req := network.FreeNetworkRequest{}
 					err := contrailDriver.FreeNetwork(&req)
@@ -271,29 +299,29 @@ var _ = Describe("Contrail Network Driver", func() {
 
 			Context("on CreateEndpoint", func() {
 
-				Context("given a Docker Contrail network", func() {
+				BeforeEach(func() {
+					err := contrailDriver.StartServing()
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					err := contrailDriver.StopServing()
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				Context("given a Docker and Contrail networks", func() {
 
 					dockerNetID := ""
 					var docker *dockerClient.Client
 
 					BeforeEach(func() {
-						var err error
-						docker, err = dockerClient.NewEnvClient()
-						Expect(err).ToNot(HaveOccurred())
+						_ = createContrailNetwork(contrailController)
 
-						err = contrailDriver.StartServing()
-						Expect(err).ToNot(HaveOccurred())
-
-						controller.CreateMockedNetworkWithSubnet(
-							contrailController.ApiClient, networkName, subnetCIDR, project)
-
-						dockerNetID = createDummyDockerNetwork(tenantName, networkName)
+						docker = getDockerClient()
+						dockerNetID = createValidDockerNetwork(docker)
 					})
 
 					AfterEach(func() {
-						err := contrailDriver.StopServing()
-						Expect(err).ToNot(HaveOccurred())
-
 						endpoints, err := hns.ListHNSEndpoints()
 						Expect(err).ToNot(HaveOccurred())
 						for _, e := range endpoints {
@@ -305,43 +333,40 @@ var _ = Describe("Contrail Network Driver", func() {
 						Expect(err).ToNot(HaveOccurred())
 						Expect(endpointsAfter).To(BeEmpty())
 
-						err = docker.NetworkRemove(context.Background(), dockerNetID)
+						err = removeDockerNetwork(docker, dockerNetID)
 						Expect(err).ToNot(HaveOccurred())
 					})
 
-					Context("on Docker container create request", func() {
+					Context("corresponding HNS network doesn't exist", func() {
+						// for example, HNS was hard-reset while docker wasn't.
+						containerID := ""
+						BeforeEach(func() {
+							contrailDriver.hnsMgr.DeleteNetwork(tenantName, networkName)
+						})
+						AfterEach(func() {
+							err := docker.ContainerRemove(context.Background(), containerID,
+								dockerTypes.ContainerRemoveOptions{})
+							Expect(err).ToNot(HaveOccurred())
+						})
+						It("responds with err", func() {
+							var err error
+							containerID, err = runDockerContainer(docker)
+							Expect(err).To(HaveOccurred())
+						})
+					})
+
+					Context("corresponding HNS network exists", func() {
 
 						var containerID string
 
 						BeforeEach(func() {
-							resp, err := docker.ContainerCreate(context.Background(),
-								&dockerTypesContainer.Config{
-									Image: "microsoft/nanoserver",
-								},
-								&dockerTypesContainer.HostConfig{
-									NetworkMode: networkName,
-								},
-								nil, "test_container_name")
-							Expect(err).ToNot(HaveOccurred())
-							containerID = resp.ID
-							Expect(containerID).ToNot(Equal(""))
-
-							err = docker.ContainerStart(context.Background(), containerID,
-								dockerTypes.ContainerStartOptions{})
+							var err error
+							containerID, err = runDockerContainer(docker)
 							Expect(err).ToNot(HaveOccurred())
 						})
 
 						AfterEach(func() {
-							// ContainerStop needs reference to timeout, and I can't use ref
-							// to const value.
-							timeoutT := timeout
-							err := docker.ContainerStop(context.Background(), containerID,
-								&timeoutT)
-							Expect(err).ToNot(HaveOccurred())
-
-							err = docker.ContainerRemove(context.Background(), containerID,
-								dockerTypes.ContainerRemoveOptions{})
-							Expect(err).ToNot(HaveOccurred())
+							stopDockerContainer(docker, containerID)
 						})
 
 						It("allocates Contrail resources", func() {
@@ -404,6 +429,7 @@ var _ = Describe("Contrail Network Driver", func() {
 						})
 
 						PIt("configures vRouter agent", func() {})
+
 					})
 
 				})
@@ -418,26 +444,6 @@ var _ = Describe("Contrail Network Driver", func() {
 					})
 				})
 
-				PContext("docker network is misconfigured", func() {
-					It("responds with err", func() {
-						docker, err := dockerClient.NewEnvClient()
-						Expect(err).ToNot(HaveOccurred())
-						params := &dockerTypes.NetworkCreate{
-							Options: map[string]string{
-								"tenant":  tenantName,
-								"network": "lolel",
-							},
-						}
-						_, err = docker.NetworkCreate(context.Background(), networkName, *params)
-						Expect(err).ToNot(HaveOccurred())
-						req := network.CreateEndpointRequest{
-							EndpointID: "somecontainerID",
-						}
-						resp, err := contrailDriver.CreateEndpoint(&req)
-						Expect(err).To(HaveOccurred())
-						Expect(resp).To(BeNil())
-					})
-				})
 			})
 
 			Context("on DeleteEndpoint", func() {
@@ -521,14 +527,52 @@ func startDriver() (*ContrailDriver, *controller.Controller, *types.Project) {
 	} else {
 		c, p = controller.NewMockedClientAndProject(tenantName)
 	}
-	d := NewDriver("Ethernet0", c)
+	d := NewDriver(netAdapter, c)
 
 	return d, c, p
 }
 
-func createDummyDockerNetwork(tenant, netName string) string {
+func getDockerClient() *dockerClient.Client {
 	docker, err := dockerClient.NewEnvClient()
 	Expect(err).ToNot(HaveOccurred())
+	return docker
+}
+
+func runDockerContainer(docker *dockerClient.Client) (string, error) {
+	resp, err := docker.ContainerCreate(context.Background(),
+		&dockerTypesContainer.Config{
+			Image: "microsoft/nanoserver",
+		},
+		&dockerTypesContainer.HostConfig{
+			NetworkMode: networkName,
+		},
+		nil, "test_container_name")
+	Expect(err).ToNot(HaveOccurred())
+	containerID := resp.ID
+	Expect(containerID).ToNot(Equal(""))
+
+	err = docker.ContainerStart(context.Background(), containerID,
+		dockerTypes.ContainerStartOptions{})
+
+	return containerID, err
+}
+
+func stopDockerContainer(docker *dockerClient.Client, containerID string) {
+	timeout := time.Second * 5
+	err := docker.ContainerStop(context.Background(), containerID,
+		&timeout)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = docker.ContainerRemove(context.Background(), containerID,
+		dockerTypes.ContainerRemoveOptions{})
+	Expect(err).ToNot(HaveOccurred())
+}
+
+func createValidDockerNetwork(docker *dockerClient.Client) string {
+	return createDockerNetwork(tenantName, networkName, docker)
+}
+
+func createDockerNetwork(tenant, network string, docker *dockerClient.Client) string {
 	params := &dockerTypes.NetworkCreate{
 		Driver: common.DriverName,
 		IPAM: &dockerTypesNetwork.IPAM{
@@ -548,10 +592,19 @@ func createDummyDockerNetwork(tenant, netName string) string {
 		},
 		Options: map[string]string{
 			"tenant":  tenant,
-			"network": networkName,
+			"network": network,
 		},
 	}
 	resp, err := docker.NetworkCreate(context.Background(), networkName, *params)
 	Expect(err).ToNot(HaveOccurred())
 	return resp.ID
+}
+
+func removeDockerNetwork(docker *dockerClient.Client, dockerNetID string) error {
+	return docker.NetworkRemove(context.Background(), dockerNetID)
+}
+
+func createContrailNetwork(c *controller.Controller) *types.VirtualNetwork {
+	return controller.CreateMockedNetworkWithSubnet(
+		c.ApiClient, networkName, subnetCIDR, project)
 }

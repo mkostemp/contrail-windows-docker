@@ -21,6 +21,7 @@ import (
 	"github.com/codilime/contrail-windows-docker/controller"
 	"github.com/codilime/contrail-windows-docker/hns"
 	"github.com/codilime/contrail-windows-docker/hnsManager"
+	dockerTypes "github.com/docker/docker/api/types"
 	dockerClient "github.com/docker/docker/client"
 	"github.com/docker/go-plugins-helpers/network"
 )
@@ -30,6 +31,11 @@ type ContrailDriver struct {
 	hnsMgr         *hnsManager.HNSManager
 	networkAdapter string
 	listener       net.Listener
+}
+
+type NetworkMeta struct {
+	tenant  string
+	network string
 }
 
 func NewDriver(adapter string, c *controller.Controller) *ContrailDriver {
@@ -175,15 +181,38 @@ func (d *ContrailDriver) DeleteNetwork(req *network.DeleteNetworkRequest) error 
 	log.Debugln("=== DeleteNetwork")
 	log.Debugln(req)
 
-	tenant, netName, err := d.tenantAndNetnameFromDockerNetwork(req.NetworkID)
+	dockerNetsMeta, err := d.dockerNetworksMeta()
+	log.Debugln("Current docker-Contrail networks meta", dockerNetsMeta)
 	if err != nil {
 		return err
 	}
-	err = d.hnsMgr.DeleteNetwork(tenant, netName)
+
+	hnsNetsMeta, err := d.hnsNetworksMeta()
+	log.Debugln("Current HNS-Contrail networks meta", hnsNetsMeta)
 	if err != nil {
 		return err
 	}
-	return nil
+
+	var toRemove *NetworkMeta
+	toRemove = nil
+	for _, hnsMeta := range hnsNetsMeta {
+		matchFound := false
+		for _, dockerMeta := range dockerNetsMeta {
+			if dockerMeta.tenant == hnsMeta.tenant && dockerMeta.network == hnsMeta.network {
+				matchFound = true
+				break
+			}
+		}
+		if !matchFound {
+			toRemove = &hnsMeta
+			break
+		}
+	}
+
+	if toRemove == nil {
+		return errors.New("During handling of DeleteNetwork, couldn't find net to remove")
+	}
+	return d.hnsMgr.DeleteNetwork(toRemove.tenant, toRemove.network)
 }
 
 func (d *ContrailDriver) FreeNetwork(req *network.FreeNetworkRequest) error {
@@ -202,12 +231,12 @@ func (d *ContrailDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*ne
 		fmt.Printf("%v: %v\n", k, v)
 	}
 
-	tenant, netName, err := d.tenantAndNetnameFromDockerNetwork(req.NetworkID)
+	meta, err := d.networkMetaFromDockerNetwork(req.NetworkID)
 	if err != nil {
 		return nil, err
 	}
 
-	contrailNetwork, err := d.controller.GetNetwork(tenant, netName)
+	contrailNetwork, err := d.controller.GetNetwork(meta.tenant, meta.network)
 	log.Infoln("Retreived Contrail network:", contrailNetwork.GetUuid())
 	if err != nil {
 		return nil, err
@@ -224,7 +253,7 @@ func (d *ContrailDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*ne
 	// containerID := req.Options["vmname"]
 	containerID := req.EndpointID
 
-	contrailInstance, err := d.controller.GetOrCreateInstance(tenant, containerID)
+	contrailInstance, err := d.controller.GetOrCreateInstance(meta.tenant, containerID)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +284,7 @@ func (d *ContrailDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*ne
 	// HNS needs MACs like 11-22-AA-BB-CC-DD
 	formattedMac := strings.Replace(strings.ToUpper(contrailMac), ":", "-", -1)
 
-	hnsNet, err := d.hnsMgr.GetNetwork(tenant, netName)
+	hnsNet, err := d.hnsMgr.GetNetwork(meta.tenant, meta.network)
 	if err != nil {
 		return nil, err
 	}
@@ -315,12 +344,12 @@ func (d *ContrailDriver) Join(req *network.JoinRequest) (*network.JoinResponse, 
 		fmt.Printf("%v: %v\n", k, v)
 	}
 
-	tenant, netName, err := d.tenantAndNetnameFromDockerNetwork(req.NetworkID)
+	meta, err := d.networkMetaFromDockerNetwork(req.NetworkID)
 	if err != nil {
 		return nil, err
 	}
 
-	contrailNetwork, err := d.controller.GetNetwork(tenant, netName)
+	contrailNetwork, err := d.controller.GetNetwork(meta.tenant, meta.network)
 	log.Infoln("Retreived Contrail network:", contrailNetwork.GetUuid())
 	if err != nil {
 		return nil, err
@@ -369,26 +398,75 @@ func (d *ContrailDriver) RevokeExternalConnectivity(req *network.RevokeExternalC
 	return nil
 }
 
-func (d *ContrailDriver) tenantAndNetnameFromDockerNetwork(dockerNetID string) (string, string, error) {
+func (d *ContrailDriver) networkMetaFromDockerNetwork(dockerNetID string) (*NetworkMeta,
+	error) {
 	docker, err := dockerClient.NewEnvClient()
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	dockerNetwork, err := docker.NetworkInspect(context.Background(), dockerNetID)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
-	tenant, exists := dockerNetwork.Options["tenant"]
+	var meta NetworkMeta
+	var exists bool
+
+	meta.tenant, exists = dockerNetwork.Options["tenant"]
 	if !exists {
-		return "", "", errors.New("Retreived network has no Contrail tenant specified")
+		return nil, errors.New("Retreived network has no Contrail tenant specified")
 	}
 
-	netName, exists := dockerNetwork.Options["network"]
+	meta.network, exists = dockerNetwork.Options["network"]
 	if !exists {
-		return "", "", errors.New("Retreived network has no Contrail network name specfied")
+		return nil, errors.New("Retreived network has no Contrail network name specfied")
 	}
 
-	return tenant, netName, nil
+	return &meta, nil
+}
+
+func (d *ContrailDriver) dockerNetworksMeta() ([]NetworkMeta, error) {
+	var meta []NetworkMeta
+
+	docker, err := dockerClient.NewEnvClient()
+	if err != nil {
+		return meta, err
+	}
+
+	netList, err := docker.NetworkList(context.Background(), dockerTypes.NetworkListOptions{})
+	if err != nil {
+		return meta, err
+	}
+
+	for _, net := range netList {
+		tenantContrail, tenantExists := net.Options["tenant"]
+		networkContrail, networkExists := net.Options["network"]
+		if tenantExists && networkExists {
+			meta = append(meta, NetworkMeta{
+				tenant:  tenantContrail,
+				network: networkContrail,
+			})
+		}
+	}
+	return meta, nil
+}
+
+func (d *ContrailDriver) hnsNetworksMeta() ([]NetworkMeta, error) {
+	hnsNetworks, err := d.hnsMgr.ListNetworks()
+	if err != nil {
+		return nil, err
+	}
+
+	var meta []NetworkMeta
+	for _, net := range hnsNetworks {
+		splitName := strings.Split(net.Name, ":")
+		tenantName := splitName[1]
+		networkName := splitName[2]
+		meta = append(meta, NetworkMeta{
+			tenant:  tenantName,
+			network: networkName,
+		})
+	}
+	return meta, nil
 }
