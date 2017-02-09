@@ -375,25 +375,17 @@ func (d *ContrailDriver) Join(req *network.JoinRequest) (*network.JoinResponse, 
 		fmt.Printf("%v: %v\n", k, v)
 	}
 
-	meta, err := d.networkMetaFromDockerNetwork(req.NetworkID)
+	hnsEp, err := hns.GetHNSEndpointByName(req.EndpointID)
 	if err != nil {
 		return nil, err
 	}
-
-	contrailNetwork, err := d.controller.GetNetwork(meta.tenant, meta.network)
-	log.Infoln("Retreived Contrail network:", contrailNetwork.GetUuid())
-	if err != nil {
-		return nil, err
-	}
-
-	gw, err := d.controller.GetDefaultGatewayIp(contrailNetwork)
-	if err != nil {
-		return nil, err
+	if hnsEp == nil {
+		return nil, errors.New("Such HNS endpoint doesn't exist")
 	}
 
 	r := &network.JoinResponse{
 		DisableGatewayService: true,
-		Gateway:               gw,
+		Gateway:               hnsEp.GatewayAddress,
 	}
 
 	return r, nil
@@ -402,6 +394,15 @@ func (d *ContrailDriver) Join(req *network.JoinRequest) (*network.JoinResponse, 
 func (d *ContrailDriver) Leave(req *network.LeaveRequest) error {
 	log.Debugln("=== Leave")
 	log.Debugln(req)
+
+	hnsEp, err := hns.GetHNSEndpointByName(req.EndpointID)
+	if err != nil {
+		return err
+	}
+	if hnsEp == nil {
+		return errors.New("Such HNS endpoint doesn't exist")
+	}
+
 	return nil
 }
 

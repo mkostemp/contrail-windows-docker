@@ -576,24 +576,108 @@ var _ = Describe("Contrail Network Driver", func() {
 				It("responds with proper InfoResponse", func() {})
 			})
 
-			PContext("on Join", func() {
-				Context("queried endpoint exists", func() {
-					It("responds with proper JoinResponse", func() {}) // nil maybe?
+			Context("docker, HNS and Contrail are setup correctly", func() {
+
+				dockerNetID := ""
+				containerID := ""
+				var docker *dockerClient.Client
+				var contrailNet *types.VirtualNetwork
+				var contrailGW string
+
+				BeforeEach(func() {
+					err := contrailDriver.StartServing()
+					Expect(err).ToNot(HaveOccurred())
+
+					contrailNet = createContrailNetwork(contrailController)
+					ipams, err := contrailNet.GetNetworkIpamRefs()
+					Expect(err).ToNot(HaveOccurred())
+					subnets := ipams[0].Attr.(types.VnSubnetsType).IpamSubnets
+					contrailGW = subnets[0].DefaultGateway
+
+					docker = getDockerClient()
+					dockerNetID = createValidDockerNetwork(docker)
+					containerID, err = runDockerContainer(docker)
+					Expect(err).ToNot(HaveOccurred())
 				})
 
-				Context("queried endpoint doesn't exist", func() {
-					It("responds with err", func() {})
-				})
-			})
-
-			PContext("on Leave", func() {
-
-				Context("queried endpoint exists", func() {
-					It("responds with proper JoinResponse, nil", func() {})
+				AfterEach(func() {
+					cleanupAllDockerNetworksAndContainers(docker)
+					err := contrailDriver.StopServing()
+					Expect(err).ToNot(HaveOccurred())
 				})
 
-				Context("queried endpoint doesn't exist", func() {
-					It("responds with err", func() {})
+				Context("on Join", func() {
+					var req *network.JoinRequest
+
+					BeforeEach(func() {
+						dockerNet, err := docker.NetworkInspect(context.Background(), dockerNetID)
+						Expect(err).ToNot(HaveOccurred())
+						req = &network.JoinRequest{
+							NetworkID:  dockerNetID,
+							EndpointID: dockerNet.Containers[containerID].EndpointID,
+						}
+					})
+
+					Context("queried endpoint exists", func() {
+						It("responds with valid gateway IP and disabled gw service", func() {
+							resp, err := contrailDriver.Join(req)
+							Expect(err).ToNot(HaveOccurred())
+							Expect(resp.DisableGatewayService).To(BeTrue())
+							Expect(resp.Gateway).To(Equal(contrailGW))
+						})
+					})
+
+					Context("queried endpoint doesn't exist", func() {
+						BeforeEach(func() {
+							hnsNets, err := contrailDriver.hnsMgr.ListNetworks()
+							Expect(err).ToNot(HaveOccurred())
+							eps, err := hns.ListHNSEndpointsOfNetwork(hnsNets[0].Id)
+							Expect(err).ToNot(HaveOccurred())
+							hnsEndpointID := eps[0].Id
+							err = hns.DeleteHNSEndpoint(hnsEndpointID)
+							Expect(err).ToNot(HaveOccurred())
+						})
+						It("responds with err", func() {
+							_, err := contrailDriver.Join(req)
+							Expect(err).To(HaveOccurred())
+						})
+					})
+				})
+
+				Context("on Leave", func() {
+					var req *network.LeaveRequest
+
+					BeforeEach(func() {
+						dockerNet, err := docker.NetworkInspect(context.Background(), dockerNetID)
+						Expect(err).ToNot(HaveOccurred())
+						req = &network.LeaveRequest{
+							NetworkID:  dockerNetID,
+							EndpointID: dockerNet.Containers[containerID].EndpointID,
+						}
+					})
+
+					Context("queried endpoint exists", func() {
+						It("responds with nil", func() {
+							err := contrailDriver.Leave(req)
+							Expect(err).ToNot(HaveOccurred())
+						})
+					})
+
+					Context("queried endpoint doesn't exist", func() {
+						BeforeEach(func() {
+							hnsNets, err := contrailDriver.hnsMgr.ListNetworks()
+							Expect(err).ToNot(HaveOccurred())
+							eps, err := hns.ListHNSEndpointsOfNetwork(hnsNets[0].Id)
+							Expect(err).ToNot(HaveOccurred())
+							hnsEndpointID := eps[0].Id
+							err = hns.DeleteHNSEndpoint(hnsEndpointID)
+							Expect(err).ToNot(HaveOccurred())
+						})
+						It("responds with err", func() {
+							err := contrailDriver.Leave(req)
+							Expect(err).To(HaveOccurred())
+						})
+					})
 				})
 			})
 
@@ -680,7 +764,7 @@ func stopAndRemoveDockerContainer(docker *dockerClient.Client, containerID strin
 	Expect(err).ToNot(HaveOccurred())
 
 	err = docker.ContainerRemove(context.Background(), containerID,
-		dockerTypes.ContainerRemoveOptions{})
+		dockerTypes.ContainerRemoveOptions{Force: true})
 	Expect(err).ToNot(HaveOccurred())
 }
 
