@@ -322,6 +322,9 @@ var _ = Describe("Cleaning up", func() {
 
 var _ = Describe("Authenticating", func() {
 
+	keysFromEnvVariables := &KeystoneEnvs{}
+	keysFromEnvVariables.LoadFromEnvironment()
+
 	type TestCase struct {
 		shouldErr bool
 		keys      KeystoneEnvs
@@ -406,13 +409,9 @@ var _ = Describe("Authenticating", func() {
 			shouldErr: true,
 		}),
 		Entry("everything correct", TestCase{
-			keys: KeystoneEnvs{
-				url:        "http://10.7.0.54:5000/v2.0",
-				username:   "admin",
-				tenantname: "admin",
-				password:   "secret123",
-				token:      "",
-			},
+			// we're assuming that keystone auth from env is correct for this test.
+			keys:      *keysFromEnvVariables,
 			shouldErr: false,
-		}))
+		}),
+	)
 })
