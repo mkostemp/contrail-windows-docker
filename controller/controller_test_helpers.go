@@ -16,6 +16,16 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+func TestKeystoneEnvs() *KeystoneEnvs {
+	return &KeystoneEnvs{
+		url:        "http://10.7.0.54:5000/v2.0",
+		username:   "admin",
+		tenantname: "admin",
+		password:   "secret123",
+		token:      "",
+	}
+}
+
 func NewMockedClientAndProject(tenant string) (*Controller, *types.Project) {
 	c := &Controller{}
 	mockedApiClient := new(mocks.ApiClient)
@@ -31,7 +41,7 @@ func NewMockedClientAndProject(tenant string) (*Controller, *types.Project) {
 
 func NewClientAndProject(tenant, controllerAddr string, controllerPort int) (*Controller,
 	*types.Project) {
-	c, err := NewController(controllerAddr, controllerPort)
+	c, err := NewController(controllerAddr, controllerPort, TestKeystoneEnvs())
 	Expect(err).ToNot(HaveOccurred())
 
 	ForceDeleteProject(c.ApiClient, tenant)

@@ -3,6 +3,8 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"os"
+	"reflect"
 
 	"github.com/Juniper/contrail-go-api"
 	"github.com/Juniper/contrail-go-api/types"
@@ -17,13 +19,41 @@ type Controller struct {
 	ApiClient contrail.ApiClient
 }
 
-func NewController(ip string, port int) (*Controller, error) {
+type KeystoneEnvs struct {
+	url        string
+	username   string
+	tenantname string
+	password   string
+	token      string
+}
+
+func (k *KeystoneEnvs) LoadFromEnvironment() {
+	k.url = os.Getenv("OS_AUTH_URL")
+	k.username = os.Getenv("OS_USERNAME")
+	k.tenantname = os.Getenv("OS_TENANT_NAME")
+	k.password = os.Getenv("OS_PASSWORD")
+	k.token = os.Getenv("OS_TOKEN")
+
+	// print a warning for every empty variable
+	keysReflection := reflect.ValueOf(*k)
+	for i := 0; i < keysReflection.NumField(); i++ {
+		if keysReflection.Field(i).String() == "" {
+			log.Warn("Keystone variable empty: ", keysReflection.Type().Field(i).Name)
+		}
+	}
+}
+
+func NewController(ip string, port int, keys *KeystoneEnvs) (*Controller, error) {
 	client := &Controller{}
 	client.ApiClient = contrail.NewClient(ip, port)
 
-	// TODO: use environment variables for keystone auth (JW-66)
-	keystone := contrail.NewKeystoneClient("http://10.7.0.54:5000/v2.0", "admin", "admin",
-		"secret123", "")
+	if keys.url == "" {
+		// this corner case is not handled by keystone.Authenticate. Causes panic.
+		return nil, errors.New("Empty Keystone auth URL")
+	}
+
+	keystone := contrail.NewKeystoneClient(keys.url, keys.tenantname, keys.username,
+		keys.password, keys.token)
 	err := keystone.Authenticate()
 	if err != nil {
 		log.Errorln("Keystone error:", err)

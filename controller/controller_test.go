@@ -8,6 +8,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
 
@@ -317,4 +318,101 @@ var _ = Describe("Cleaning up", func() {
 			client, project = NewMockedClientAndProject(tenantName)
 		}
 	})
+})
+
+var _ = Describe("Authenticating", func() {
+
+	type TestCase struct {
+		shouldErr bool
+		keys      KeystoneEnvs
+	}
+	DescribeTable("with different keystone env variables",
+		func(t TestCase) {
+			_, err := NewController(controllerAddr, controllerPort, &t.keys)
+			if t.shouldErr {
+				Expect(err).To(HaveOccurred())
+			} else {
+				Expect(err).ToNot(HaveOccurred())
+			}
+		},
+		Entry("env variables are not set", TestCase{
+			keys: KeystoneEnvs{
+				url:        "",
+				username:   "",
+				tenantname: "",
+				password:   "",
+				token:      "",
+			},
+			shouldErr: true,
+		}),
+		Entry("bad url", TestCase{
+			keys: KeystoneEnvs{
+				url:        "http://10.7.0.54:5000/",
+				username:   "admin",
+				tenantname: "admin",
+				password:   "secret123",
+				token:      "",
+			},
+			shouldErr: true,
+		}),
+		Entry("empty url", TestCase{
+			keys: KeystoneEnvs{
+				url:        "",
+				username:   "admin",
+				tenantname: "admin",
+				password:   "secret123",
+				token:      "",
+			},
+			shouldErr: true,
+		}),
+		Entry("bad user", TestCase{
+			keys: KeystoneEnvs{
+				url:        "http://10.7.0.54:5000/v2.0",
+				username:   "bad_user",
+				tenantname: "admin",
+				password:   "secret123",
+				token:      "",
+			},
+			shouldErr: true,
+		}),
+		Entry("bad tenant", TestCase{
+			keys: KeystoneEnvs{
+				url:        "http://10.7.0.54:5000/v2.0",
+				username:   "admin",
+				tenantname: "bad_tenant",
+				password:   "secret123",
+				token:      "",
+			},
+			shouldErr: true,
+		}),
+		Entry("bad password", TestCase{
+			keys: KeystoneEnvs{
+				url:        "http://10.7.0.54:5000/v2.0",
+				username:   "admin",
+				tenantname: "bad_tenant",
+				password:   "letmein",
+				token:      "",
+			},
+			shouldErr: true,
+		}),
+		Entry("bad token", TestCase{
+			keys: KeystoneEnvs{
+				url:        "http://10.7.0.54:5000/v2.0",
+				username:   "admin",
+				tenantname: "admin",
+				password:   "secret123",
+				token:      "124123412412341234",
+			},
+			shouldErr: true,
+		}),
+		Entry("everything correct", TestCase{
+			keys: KeystoneEnvs{
+				url:        "http://10.7.0.54:5000/v2.0",
+				username:   "admin",
+				tenantname: "admin",
+				password:   "secret123",
+				token:      "",
+			},
+			shouldErr: false,
+		}))
 })
