@@ -17,12 +17,20 @@ import (
 )
 
 func TestKeystoneEnvs() *KeystoneEnvs {
-	return &KeystoneEnvs{
-		url:        "http://10.7.0.54:5000/v2.0",
-		username:   "admin",
-		tenantname: "admin",
-		password:   "secret123",
-		token:      "",
+	keys := &KeystoneEnvs{}
+	keys.LoadFromEnvironment()
+	// try using env variables first, and if they aren't set, use the hardcoded values.
+	if keys.url != "" {
+		log.Warn("OS_AUTH_URL is SET, will use env variables for Keystone auth during testing")
+		return keys
+	} else {
+		return &KeystoneEnvs{
+			url:        "http://10.7.0.54:5000/v2.0",
+			username:   "admin",
+			tenantname: "admin",
+			password:   "secret123",
+			token:      "",
+		}
 	}
 }
 
