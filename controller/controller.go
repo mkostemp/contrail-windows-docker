@@ -20,19 +20,19 @@ type Controller struct {
 }
 
 type KeystoneEnvs struct {
-	url        string
-	username   string
-	tenantname string
-	password   string
-	token      string
+	os_auth_url    string
+	os_username    string
+	os_tenant_name string
+	os_password    string
+	os_token       string
 }
 
 func (k *KeystoneEnvs) LoadFromEnvironment() {
-	k.url = os.Getenv("OS_AUTH_URL")
-	k.username = os.Getenv("OS_USERNAME")
-	k.tenantname = os.Getenv("OS_TENANT_NAME")
-	k.password = os.Getenv("OS_PASSWORD")
-	k.token = os.Getenv("OS_TOKEN")
+	k.os_auth_url = os.Getenv("OS_AUTH_URL")
+	k.os_username = os.Getenv("OS_USERNAME")
+	k.os_tenant_name = os.Getenv("OS_TENANT_NAME")
+	k.os_password = os.Getenv("OS_PASSWORD")
+	k.os_token = os.Getenv("OS_TOKEN")
 
 	// print a warning for every empty variable
 	keysReflection := reflect.ValueOf(*k)
@@ -47,13 +47,13 @@ func NewController(ip string, port int, keys *KeystoneEnvs) (*Controller, error)
 	client := &Controller{}
 	client.ApiClient = contrail.NewClient(ip, port)
 
-	if keys.url == "" {
+	if keys.os_auth_url == "" {
 		// this corner case is not handled by keystone.Authenticate. Causes panic.
 		return nil, errors.New("Empty Keystone auth URL")
 	}
 
-	keystone := contrail.NewKeystoneClient(keys.url, keys.tenantname, keys.username,
-		keys.password, keys.token)
+	keystone := contrail.NewKeystoneClient(keys.os_auth_url, keys.os_tenant_name,
+		keys.os_username, keys.os_password, keys.os_token)
 	err := keystone.Authenticate()
 	if err != nil {
 		log.Errorln("Keystone error:", err)
