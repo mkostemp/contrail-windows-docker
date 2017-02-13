@@ -474,6 +474,7 @@ var _ = Describe("Contrail Network Driver", func() {
 
 					hnsNets, err := contrailDriver.hnsMgr.ListNetworks()
 					Expect(err).ToNot(HaveOccurred())
+					Expect(hnsNets).To(HaveLen(1))
 					eps, err := hns.ListHNSEndpointsOfNetwork(hnsNets[0].Id)
 					Expect(err).ToNot(HaveOccurred())
 
