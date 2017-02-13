@@ -9,6 +9,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
 
@@ -328,4 +329,97 @@ var _ = Describe("Controller", func() {
 			})
 		})
 	})
+})
+
+var _ = Describe("Authenticating", func() {
+
+	type TestCase struct {
+		shouldErr bool
+		keys      KeystoneEnvs
+	}
+	DescribeTable("with different keystone env variables",
+		func(t TestCase) {
+			_, err := NewController(controllerAddr, controllerPort, &t.keys)
+			if t.shouldErr {
+				Expect(err).To(HaveOccurred())
+			} else {
+				Expect(err).ToNot(HaveOccurred())
+			}
+		},
+		Entry("env variables are not set", TestCase{
+			keys: KeystoneEnvs{
+				os_auth_url:    "",
+				os_username:    "",
+				os_tenant_name: "",
+				os_password:    "",
+				os_token:       "",
+			},
+			shouldErr: true,
+		}),
+		Entry("bad url", TestCase{
+			keys: KeystoneEnvs{
+				os_auth_url:    "http://10.7.0.54:5000/",
+				os_username:    "admin",
+				os_tenant_name: "admin",
+				os_password:    "secret123",
+				os_token:       "",
+			},
+			shouldErr: true,
+		}),
+		Entry("empty url", TestCase{
+			keys: KeystoneEnvs{
+				os_auth_url:    "",
+				os_username:    "admin",
+				os_tenant_name: "admin",
+				os_password:    "secret123",
+				os_token:       "",
+			},
+			shouldErr: true,
+		}),
+		Entry("bad user", TestCase{
+			keys: KeystoneEnvs{
+				os_auth_url:    "http://10.7.0.54:5000/v2.0",
+				os_username:    "bad_user",
+				os_tenant_name: "admin",
+				os_password:    "secret123",
+				os_token:       "",
+			},
+			shouldErr: true,
+		}),
+		Entry("bad tenant", TestCase{
+			keys: KeystoneEnvs{
+				os_auth_url:    "http://10.7.0.54:5000/v2.0",
+				os_username:    "admin",
+				os_tenant_name: "bad_tenant",
+				os_password:    "secret123",
+				os_token:       "",
+			},
+			shouldErr: true,
+		}),
+		Entry("bad password", TestCase{
+			keys: KeystoneEnvs{
+				os_auth_url:    "http://10.7.0.54:5000/v2.0",
+				os_username:    "admin",
+				os_tenant_name: "admin",
+				os_password:    "letmein",
+				os_token:       "",
+			},
+			shouldErr: true,
+		}),
+		Entry("bad token", TestCase{
+			keys: KeystoneEnvs{
+				os_auth_url:    "http://10.7.0.54:5000/v2.0",
+				os_username:    "admin",
+				os_tenant_name: "admin",
+				os_password:    "secret123",
+				os_token:       "124123412412341234",
+			},
+			shouldErr: true,
+		}),
+		Entry("everything correct", TestCase{
+			// we're assuming that keystone auth from env is correct for this test.
+			keys:      *TestKeystoneEnvs(),
+			shouldErr: false,
+		}),
+	)
 })

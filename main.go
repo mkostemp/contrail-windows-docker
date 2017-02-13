@@ -23,7 +23,10 @@ func main() {
 	var c *controller.Controller
 	var err error
 
-	if c, err = controller.NewController(*controllerIP, *controllerPort); err != nil {
+	keys := &controller.KeystoneEnvs{}
+	keys.LoadFromEnvironment()
+
+	if c, err = controller.NewController(*controllerIP, *controllerPort, keys); err != nil {
 		log.Error(err)
 		return
 	}
