@@ -473,6 +473,7 @@ var _ = Describe("Contrail Network Driver", func() {
 
 					hnsNets, err := contrailDriver.hnsMgr.ListNetworks()
 					Expect(err).ToNot(HaveOccurred())
+					Expect(hnsNets).To(HaveLen(1))
 					eps, err := hns.ListHNSEndpointsOfNetwork(hnsNets[0].Id)
 					Expect(err).ToNot(HaveOccurred())
 
@@ -631,6 +632,7 @@ var _ = Describe("Contrail Network Driver", func() {
 						BeforeEach(func() {
 							hnsNets, err := contrailDriver.hnsMgr.ListNetworks()
 							Expect(err).ToNot(HaveOccurred())
+							Expect(hnsNets).To(HaveLen(1))
 							eps, err := hns.ListHNSEndpointsOfNetwork(hnsNets[0].Id)
 							Expect(err).ToNot(HaveOccurred())
 							hnsEndpointID := eps[0].Id
@@ -667,6 +669,7 @@ var _ = Describe("Contrail Network Driver", func() {
 						BeforeEach(func() {
 							hnsNets, err := contrailDriver.hnsMgr.ListNetworks()
 							Expect(err).ToNot(HaveOccurred())
+							Expect(hnsNets).To(HaveLen(1))
 							eps, err := hns.ListHNSEndpointsOfNetwork(hnsNets[0].Id)
 							Expect(err).ToNot(HaveOccurred())
 							hnsEndpointID := eps[0].Id
