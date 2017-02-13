@@ -118,4 +118,26 @@ var _ = Describe("HNS manager", func() {
 			})
 		})
 	})
+
+	Describe("Listing Contrail networks", func() {
+		BeforeEach(func() {
+			names := []string{
+				fmt.Sprintf("Contrail:%s:%s", "tenant1", "netname1"),
+				fmt.Sprintf("Contrail:%s:%s", "tenant2", "netname2"),
+				fmt.Sprintf("Contrail:%s", "invalid_num_of_fields"),
+				"some_other_name",
+			}
+			for _, n := range names {
+				hns.MockHNSNetwork(n, netAdapter, subnetCIDR, defaultGW)
+			}
+		})
+		Specify("Listing only Contrail networks works", func() {
+			nets, err := hnsMgr.ListNetworks()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(nets).To(HaveLen(2))
+			for _, n := range nets {
+				Expect(n.Name).To(ContainSubstring("Contrail:"))
+			}
+		})
+	})
 })

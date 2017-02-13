@@ -103,10 +103,39 @@ func GetHNSEndpoint(endpointID string) (*hcsshim.HNSEndpoint, error) {
 	return endpoint, nil
 }
 
+func GetHNSEndpointByName(name string) (*hcsshim.HNSEndpoint, error) {
+	log.Infoln("Getting HNS endpoint by name:", name)
+	eps, err := hcsshim.HNSListEndpointRequest("GET", "", "")
+	if err != nil {
+		log.Errorln(err)
+		return nil, err
+	}
+	for _, ep := range eps {
+		if ep.Name == name {
+			return &ep, nil
+		}
+	}
+	return nil, nil
+}
+
 func ListHNSEndpoints() ([]hcsshim.HNSEndpoint, error) {
 	endpoints, err := hcsshim.HNSListEndpointRequest("GET", "", "")
 	if err != nil {
 		return nil, err
 	}
 	return endpoints, nil
+}
+
+func ListHNSEndpointsOfNetwork(netID string) ([]hcsshim.HNSEndpoint, error) {
+	eps, err := ListHNSEndpoints()
+	if err != nil {
+		return nil, err
+	}
+	var epsInNetwork []hcsshim.HNSEndpoint
+	for _, ep := range eps {
+		if ep.VirtualNetwork == netID {
+			epsInNetwork = append(epsInNetwork, ep)
+		}
+	}
+	return epsInNetwork, nil
 }

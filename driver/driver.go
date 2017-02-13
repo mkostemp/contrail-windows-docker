@@ -21,8 +21,10 @@ import (
 	"github.com/codilime/contrail-windows-docker/controller"
 	"github.com/codilime/contrail-windows-docker/hns"
 	"github.com/codilime/contrail-windows-docker/hnsManager"
+	dockerTypes "github.com/docker/docker/api/types"
 	dockerClient "github.com/docker/docker/client"
 	"github.com/docker/go-plugins-helpers/network"
+	"github.com/docker/libnetwork/netlabel"
 )
 
 type ContrailDriver struct {
@@ -30,6 +32,11 @@ type ContrailDriver struct {
 	hnsMgr         *hnsManager.HNSManager
 	networkAdapter string
 	listener       net.Listener
+}
+
+type NetworkMeta struct {
+	tenant  string
+	network string
 }
 
 func NewDriver(adapter string, c *controller.Controller) *ContrailDriver {
@@ -116,7 +123,7 @@ func (d *ContrailDriver) CreateNetwork(req *network.CreateNetworkRequest) error 
 		fmt.Printf("%v: %v\n", k, v)
 	}
 
-	reqGenericOptionsMap, exists := req.Options["com.docker.network.generic"]
+	reqGenericOptionsMap, exists := req.Options[netlabel.GenericData]
 	if !exists {
 		return errors.New("Generic options missing")
 	}
@@ -168,6 +175,7 @@ func (d *ContrailDriver) CreateNetwork(req *network.CreateNetworkRequest) error 
 func (d *ContrailDriver) AllocateNetwork(req *network.AllocateNetworkRequest) (*network.AllocateNetworkResponse, error) {
 	log.Debugln("=== AllocateNetwork")
 	log.Debugln(req)
+	// This method is used in swarm, in remote plugins. We don't implement it.
 	return nil, errors.New("AllocateNetwork is not implemented")
 }
 
@@ -175,20 +183,44 @@ func (d *ContrailDriver) DeleteNetwork(req *network.DeleteNetworkRequest) error 
 	log.Debugln("=== DeleteNetwork")
 	log.Debugln(req)
 
-	tenant, netName, err := d.tenantAndNetnameFromDockerNetwork(req.NetworkID)
+	dockerNetsMeta, err := d.dockerNetworksMeta()
+	log.Debugln("Current docker-Contrail networks meta", dockerNetsMeta)
 	if err != nil {
 		return err
 	}
-	err = d.hnsMgr.DeleteNetwork(tenant, netName)
+
+	hnsNetsMeta, err := d.hnsNetworksMeta()
+	log.Debugln("Current HNS-Contrail networks meta", hnsNetsMeta)
 	if err != nil {
 		return err
 	}
-	return nil
+
+	var toRemove *NetworkMeta
+	toRemove = nil
+	for _, hnsMeta := range hnsNetsMeta {
+		matchFound := false
+		for _, dockerMeta := range dockerNetsMeta {
+			if dockerMeta.tenant == hnsMeta.tenant && dockerMeta.network == hnsMeta.network {
+				matchFound = true
+				break
+			}
+		}
+		if !matchFound {
+			toRemove = &hnsMeta
+			break
+		}
+	}
+
+	if toRemove == nil {
+		return errors.New("During handling of DeleteNetwork, couldn't find net to remove")
+	}
+	return d.hnsMgr.DeleteNetwork(toRemove.tenant, toRemove.network)
 }
 
 func (d *ContrailDriver) FreeNetwork(req *network.FreeNetworkRequest) error {
 	log.Debugln("=== FreeNetwork")
 	log.Debugln(req)
+	// This method is used in swarm, in remote plugins. We don't implement it.
 	return errors.New("FreeNetwork is not implemented")
 }
 
@@ -202,12 +234,12 @@ func (d *ContrailDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*ne
 		fmt.Printf("%v: %v\n", k, v)
 	}
 
-	tenant, netName, err := d.tenantAndNetnameFromDockerNetwork(req.NetworkID)
+	meta, err := d.networkMetaFromDockerNetwork(req.NetworkID)
 	if err != nil {
 		return nil, err
 	}
 
-	contrailNetwork, err := d.controller.GetNetwork(tenant, netName)
+	contrailNetwork, err := d.controller.GetNetwork(meta.tenant, meta.network)
 	log.Infoln("Retreived Contrail network:", contrailNetwork.GetUuid())
 	if err != nil {
 		return nil, err
@@ -224,7 +256,7 @@ func (d *ContrailDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*ne
 	// containerID := req.Options["vmname"]
 	containerID := req.EndpointID
 
-	contrailInstance, err := d.controller.GetOrCreateInstance(tenant, containerID)
+	contrailInstance, err := d.controller.GetOrCreateInstance(meta.tenant, containerID)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +287,7 @@ func (d *ContrailDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*ne
 	// HNS needs MACs like 11-22-AA-BB-CC-DD
 	formattedMac := strings.Replace(strings.ToUpper(contrailMac), ":", "-", -1)
 
-	hnsNet, err := d.hnsMgr.GetNetwork(tenant, netName)
+	hnsNet, err := d.hnsMgr.GetNetwork(meta.tenant, meta.network)
 	if err != nil {
 		return nil, err
 	}
@@ -268,8 +300,6 @@ func (d *ContrailDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*ne
 		GatewayAddress:     contrailGateway,
 	}
 
-	// TODO: maybe store hnsEndpointID somehow? is there a reason to?
-	// Maybe it will become more clear when implementing the rest of the API.
 	_, err = hns.CreateHNSEndpoint(hnsEndpointConfig)
 	if err != nil {
 		return nil, err
@@ -297,13 +327,61 @@ func (d *ContrailDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*ne
 func (d *ContrailDriver) DeleteEndpoint(req *network.DeleteEndpointRequest) error {
 	log.Debugln("=== DeleteEndpoint")
 	log.Debugln(req)
-	return nil
+
+	meta, err := d.networkMetaFromDockerNetwork(req.NetworkID)
+	if err != nil {
+		return err
+	}
+
+	// TODO JW-187.
+	// We need something like:
+	// containerID := req.Options["vmname"]
+	containerID := req.EndpointID
+
+	contrailInstance, err := d.controller.GetOrCreateInstance(meta.tenant, containerID)
+	if err != nil {
+		log.Warn("When handling DeleteEndpoint, Contrail vm instance wasn't found")
+	} else {
+		err = d.controller.DeleteElementRecursive(contrailInstance)
+		if err != nil {
+			log.Warn("When handling DeleteEndpoint, failed to remove Contrail vm instance")
+		}
+	}
+
+	hnsEpName := req.EndpointID
+	epToDelete, err := hns.GetHNSEndpointByName(hnsEpName)
+	if err != nil {
+		return err
+	}
+	if epToDelete == nil {
+		log.Warn("When handling DeleteEndpoint, couldn't find HNS endpoint to delete")
+		return nil
+	}
+
+	return hns.DeleteHNSEndpoint(epToDelete.Id)
 }
 
 func (d *ContrailDriver) EndpointInfo(req *network.InfoRequest) (*network.InfoResponse, error) {
 	log.Debugln("=== EndpointInfo")
 	log.Debugln(req)
-	r := &network.InfoResponse{}
+
+	hnsEpName := req.EndpointID
+	hnsEp, err := hns.GetHNSEndpointByName(hnsEpName)
+	if err != nil {
+		return nil, err
+	}
+	if hnsEp == nil {
+		return nil, errors.New("When handling EndpointInfo, couldn't find HNS endpoint")
+	}
+
+	respData := map[string]string{
+		"hnsid":             hnsEp.Id,
+		netlabel.MacAddress: hnsEp.MacAddress,
+	}
+
+	r := &network.InfoResponse{
+		Value: respData,
+	}
 	return r, nil
 }
 
@@ -315,25 +393,17 @@ func (d *ContrailDriver) Join(req *network.JoinRequest) (*network.JoinResponse, 
 		fmt.Printf("%v: %v\n", k, v)
 	}
 
-	tenant, netName, err := d.tenantAndNetnameFromDockerNetwork(req.NetworkID)
+	hnsEp, err := hns.GetHNSEndpointByName(req.EndpointID)
 	if err != nil {
 		return nil, err
 	}
-
-	contrailNetwork, err := d.controller.GetNetwork(tenant, netName)
-	log.Infoln("Retreived Contrail network:", contrailNetwork.GetUuid())
-	if err != nil {
-		return nil, err
-	}
-
-	gw, err := d.controller.GetDefaultGatewayIp(contrailNetwork)
-	if err != nil {
-		return nil, err
+	if hnsEp == nil {
+		return nil, errors.New("Such HNS endpoint doesn't exist")
 	}
 
 	r := &network.JoinResponse{
 		DisableGatewayService: true,
-		Gateway:               gw,
+		Gateway:               hnsEp.GatewayAddress,
 	}
 
 	return r, nil
@@ -342,18 +412,29 @@ func (d *ContrailDriver) Join(req *network.JoinRequest) (*network.JoinResponse, 
 func (d *ContrailDriver) Leave(req *network.LeaveRequest) error {
 	log.Debugln("=== Leave")
 	log.Debugln(req)
+
+	hnsEp, err := hns.GetHNSEndpointByName(req.EndpointID)
+	if err != nil {
+		return err
+	}
+	if hnsEp == nil {
+		return errors.New("Such HNS endpoint doesn't exist")
+	}
+
 	return nil
 }
 
 func (d *ContrailDriver) DiscoverNew(req *network.DiscoveryNotification) error {
 	log.Debugln("=== DiscoverNew")
 	log.Debugln(req)
+	// We don't care about discovery notifications.
 	return nil
 }
 
 func (d *ContrailDriver) DiscoverDelete(req *network.DiscoveryNotification) error {
 	log.Debugln("=== DiscoverDelete")
 	log.Debugln(req)
+	// We don't care about discovery notifications.
 	return nil
 }
 
@@ -369,26 +450,76 @@ func (d *ContrailDriver) RevokeExternalConnectivity(req *network.RevokeExternalC
 	return nil
 }
 
-func (d *ContrailDriver) tenantAndNetnameFromDockerNetwork(dockerNetID string) (string, string, error) {
+func (d *ContrailDriver) networkMetaFromDockerNetwork(dockerNetID string) (*NetworkMeta,
+	error) {
 	docker, err := dockerClient.NewEnvClient()
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	dockerNetwork, err := docker.NetworkInspect(context.Background(), dockerNetID)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
-	tenant, exists := dockerNetwork.Options["tenant"]
+	var meta NetworkMeta
+	var exists bool
+
+	meta.tenant, exists = dockerNetwork.Options["tenant"]
 	if !exists {
-		return "", "", errors.New("Retreived network has no Contrail tenant specified")
+		return nil, errors.New("Retreived network has no Contrail tenant specified")
 	}
 
-	netName, exists := dockerNetwork.Options["network"]
+	meta.network, exists = dockerNetwork.Options["network"]
 	if !exists {
-		return "", "", errors.New("Retreived network has no Contrail network name specfied")
+		return nil, errors.New("Retreived network has no Contrail network name specfied")
 	}
 
-	return tenant, netName, nil
+	return &meta, nil
+}
+
+func (d *ContrailDriver) dockerNetworksMeta() ([]NetworkMeta, error) {
+	var meta []NetworkMeta
+
+	docker, err := dockerClient.NewEnvClient()
+	if err != nil {
+		return nil, err
+	}
+
+	netList, err := docker.NetworkList(context.Background(), dockerTypes.NetworkListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, net := range netList {
+		tenantContrail, tenantExists := net.Options["tenant"]
+		networkContrail, networkExists := net.Options["network"]
+		if tenantExists && networkExists {
+			meta = append(meta, NetworkMeta{
+				tenant:  tenantContrail,
+				network: networkContrail,
+			})
+		}
+	}
+	return meta, nil
+}
+
+func (d *ContrailDriver) hnsNetworksMeta() ([]NetworkMeta, error) {
+	hnsNetworks, err := d.hnsMgr.ListNetworks()
+	if err != nil {
+		return nil, err
+	}
+
+	var meta []NetworkMeta
+	for _, net := range hnsNetworks {
+		splitName := strings.Split(net.Name, ":")
+		// hnsManager.ListNetworks() already sanitizes network name
+		tenantName := splitName[1]
+		networkName := splitName[2]
+		meta = append(meta, NetworkMeta{
+			tenant:  tenantName,
+			network: networkName,
+		})
+	}
+	return meta, nil
 }

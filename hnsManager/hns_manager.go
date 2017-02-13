@@ -3,6 +3,7 @@ package hnsManager
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/Microsoft/hcsshim"
 	"github.com/codilime/contrail-windows-docker/common"
@@ -83,6 +84,22 @@ func (m *HNSManager) DeleteNetwork(tenantName, networkName string) error {
 			return errors.New("Cannot delete network with active endpoints")
 		}
 	}
-
 	return hns.DeleteHNSNetwork(hnsNetwork.Id)
+}
+
+func (m *HNSManager) ListNetworks() ([]hcsshim.HNSNetwork, error) {
+	var validNets []hcsshim.HNSNetwork
+	nets, err := hns.ListHNSNetworks()
+	if err != nil {
+		return validNets, err
+	}
+	for _, net := range nets {
+		splitName := strings.Split(net.Name, ":")
+		if len(splitName) == 3 {
+			if splitName[0] == common.HNSNetworkPrefix {
+				validNets = append(validNets, net)
+			}
+		}
+	}
+	return validNets, nil
 }
