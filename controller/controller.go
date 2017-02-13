@@ -184,6 +184,7 @@ func (c *Controller) DeleteElementRecursive(parent contrail.IObject) error {
 	log.Debugln("Deleting", parent.GetType(), parent.GetUuid())
 	for err := c.ApiClient.Delete(parent); err != nil; err = c.ApiClient.Delete(parent) {
 		if strings.Contains(err.Error(), "404 Resource") {
+			log.Errorln("Failed to delete Contrail resource", err.Error())
 			break
 		} else if strings.Contains(err.Error(), "409 Conflict") {
 			msg := err.Error()

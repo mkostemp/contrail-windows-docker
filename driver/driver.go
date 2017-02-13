@@ -431,12 +431,12 @@ func (d *ContrailDriver) dockerNetworksMeta() ([]NetworkMeta, error) {
 
 	docker, err := dockerClient.NewEnvClient()
 	if err != nil {
-		return meta, err
+		return nil, err
 	}
 
 	netList, err := docker.NetworkList(context.Background(), dockerTypes.NetworkListOptions{})
 	if err != nil {
-		return meta, err
+		return nil, err
 	}
 
 	for _, net := range netList {
@@ -461,6 +461,7 @@ func (d *ContrailDriver) hnsNetworksMeta() ([]NetworkMeta, error) {
 	var meta []NetworkMeta
 	for _, net := range hnsNetworks {
 		splitName := strings.Split(net.Name, ":")
+		// hnsManager.ListNetworks() already sanitizes network name
 		tenantName := splitName[1]
 		networkName := splitName[2]
 		meta = append(meta, NetworkMeta{
