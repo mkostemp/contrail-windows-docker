@@ -389,7 +389,7 @@ var _ = Describe("Authenticating", func() {
 			keys: KeystoneEnvs{
 				os_auth_url:    "http://10.7.0.54:5000/v2.0",
 				os_username:    "admin",
-				os_tenant_name: "bad_tenant",
+				os_tenant_name: "admin",
 				os_password:    "letmein",
 				os_token:       "",
 			},
