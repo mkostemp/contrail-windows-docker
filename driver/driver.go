@@ -24,6 +24,7 @@ import (
 	dockerTypes "github.com/docker/docker/api/types"
 	dockerClient "github.com/docker/docker/client"
 	"github.com/docker/go-plugins-helpers/network"
+	"github.com/docker/libnetwork/netlabel"
 )
 
 type ContrailDriver struct {
@@ -122,7 +123,7 @@ func (d *ContrailDriver) CreateNetwork(req *network.CreateNetworkRequest) error 
 		fmt.Printf("%v: %v\n", k, v)
 	}
 
-	reqGenericOptionsMap, exists := req.Options["com.docker.network.generic"]
+	reqGenericOptionsMap, exists := req.Options[netlabel.GenericData]
 	if !exists {
 		return errors.New("Generic options missing")
 	}
@@ -174,6 +175,7 @@ func (d *ContrailDriver) CreateNetwork(req *network.CreateNetworkRequest) error 
 func (d *ContrailDriver) AllocateNetwork(req *network.AllocateNetworkRequest) (*network.AllocateNetworkResponse, error) {
 	log.Debugln("=== AllocateNetwork")
 	log.Debugln(req)
+	// This method is used in swarm, in remote plugins. We don't implement it.
 	return nil, errors.New("AllocateNetwork is not implemented")
 }
 
@@ -218,6 +220,7 @@ func (d *ContrailDriver) DeleteNetwork(req *network.DeleteNetworkRequest) error 
 func (d *ContrailDriver) FreeNetwork(req *network.FreeNetworkRequest) error {
 	log.Debugln("=== FreeNetwork")
 	log.Debugln(req)
+	// This method is used in swarm, in remote plugins. We don't implement it.
 	return errors.New("FreeNetwork is not implemented")
 }
 
@@ -297,8 +300,6 @@ func (d *ContrailDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*ne
 		GatewayAddress:     contrailGateway,
 	}
 
-	// TODO: maybe store hnsEndpointID somehow? is there a reason to?
-	// Maybe it will become more clear when implementing the rest of the API.
 	_, err = hns.CreateHNSEndpoint(hnsEndpointConfig)
 	if err != nil {
 		return nil, err
@@ -363,7 +364,24 @@ func (d *ContrailDriver) DeleteEndpoint(req *network.DeleteEndpointRequest) erro
 func (d *ContrailDriver) EndpointInfo(req *network.InfoRequest) (*network.InfoResponse, error) {
 	log.Debugln("=== EndpointInfo")
 	log.Debugln(req)
-	r := &network.InfoResponse{}
+
+	hnsEpName := req.EndpointID
+	hnsEp, err := hns.GetHNSEndpointByName(hnsEpName)
+	if err != nil {
+		return nil, err
+	}
+	if hnsEp == nil {
+		return nil, errors.New("When handling EndpointInfo, couldn't find HNS endpoint")
+	}
+
+	respData := map[string]string{
+		"hnsid":             hnsEp.Id,
+		netlabel.MacAddress: hnsEp.MacAddress,
+	}
+
+	r := &network.InfoResponse{
+		Value: respData,
+	}
 	return r, nil
 }
 
@@ -409,12 +427,14 @@ func (d *ContrailDriver) Leave(req *network.LeaveRequest) error {
 func (d *ContrailDriver) DiscoverNew(req *network.DiscoveryNotification) error {
 	log.Debugln("=== DiscoverNew")
 	log.Debugln(req)
+	// We don't care about discovery notifications.
 	return nil
 }
 
 func (d *ContrailDriver) DiscoverDelete(req *network.DiscoveryNotification) error {
 	log.Debugln("=== DiscoverDelete")
 	log.Debugln(req)
+	// We don't care about discovery notifications.
 	return nil
 }
 

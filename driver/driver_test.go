@@ -12,6 +12,7 @@ import (
 	"net"
 
 	"github.com/Juniper/contrail-go-api/types"
+	"github.com/Microsoft/hcsshim"
 	log "github.com/Sirupsen/logrus"
 	"github.com/codilime/contrail-windows-docker/common"
 	"github.com/codilime/contrail-windows-docker/controller"
@@ -573,10 +574,6 @@ var _ = Describe("Contrail Network Driver", func() {
 
 			})
 
-			PContext("on EndpointInfo", func() {
-				It("responds with proper InfoResponse", func() {})
-			})
-
 			Context("docker, HNS and Contrail are setup correctly", func() {
 
 				dockerNetID := ""
@@ -584,6 +581,16 @@ var _ = Describe("Contrail Network Driver", func() {
 				var docker *dockerClient.Client
 				var contrailNet *types.VirtualNetwork
 				var contrailGW string
+
+				deleteQueriedEndpoint := func() {
+					hnsNets, err := contrailDriver.hnsMgr.ListNetworks()
+					Expect(err).ToNot(HaveOccurred())
+					eps, err := hns.ListHNSEndpointsOfNetwork(hnsNets[0].Id)
+					Expect(err).ToNot(HaveOccurred())
+					hnsEndpointID := eps[0].Id
+					err = hns.DeleteHNSEndpoint(hnsEndpointID)
+					Expect(err).ToNot(HaveOccurred())
+				}
 
 				BeforeEach(func() {
 					err := contrailDriver.StartServing()
@@ -605,6 +612,48 @@ var _ = Describe("Contrail Network Driver", func() {
 					cleanupAllDockerNetworksAndContainers(docker)
 					err := contrailDriver.StopServing()
 					Expect(err).ToNot(HaveOccurred())
+				})
+
+				Context("on EndpointInfo", func() {
+					var req *network.InfoRequest
+
+					BeforeEach(func() {
+						dockerNet, err := docker.NetworkInspect(context.Background(), dockerNetID)
+						Expect(err).ToNot(HaveOccurred())
+						req = &network.InfoRequest{
+							NetworkID:  dockerNetID,
+							EndpointID: dockerNet.Containers[containerID].EndpointID,
+						}
+					})
+
+					Context("queried endpoint exists", func() {
+						var hnsEndpoint *hcsshim.HNSEndpoint
+						BeforeEach(func() {
+							hnsNets, err := contrailDriver.hnsMgr.ListNetworks()
+							Expect(err).ToNot(HaveOccurred())
+							eps, err := hns.ListHNSEndpointsOfNetwork(hnsNets[0].Id)
+							Expect(err).ToNot(HaveOccurred())
+							hnsEndpointID := eps[0].Id
+							hnsEndpoint, err = hns.GetHNSEndpoint(hnsEndpointID)
+							Expect(err).ToNot(HaveOccurred())
+
+						})
+						It("responds with proper InfoResponse", func() {
+							resp, err := contrailDriver.EndpointInfo(req)
+							Expect(err).ToNot(HaveOccurred())
+							Expect(resp.Value).To(HaveKeyWithValue("hnsid", hnsEndpoint.Id))
+							Expect(resp.Value).To(HaveKeyWithValue(
+								"com.docker.network.endpoint.macaddress", hnsEndpoint.MacAddress))
+						})
+					})
+
+					Context("queried endpoint doesn't exist", func() {
+						BeforeEach(deleteQueriedEndpoint)
+						It("responds with err", func() {
+							_, err := contrailDriver.EndpointInfo(req)
+							Expect(err).To(HaveOccurred())
+						})
+					})
 				})
 
 				Context("on Join", func() {
@@ -629,16 +678,7 @@ var _ = Describe("Contrail Network Driver", func() {
 					})
 
 					Context("queried endpoint doesn't exist", func() {
-						BeforeEach(func() {
-							hnsNets, err := contrailDriver.hnsMgr.ListNetworks()
-							Expect(err).ToNot(HaveOccurred())
-							Expect(hnsNets).To(HaveLen(1))
-							eps, err := hns.ListHNSEndpointsOfNetwork(hnsNets[0].Id)
-							Expect(err).ToNot(HaveOccurred())
-							hnsEndpointID := eps[0].Id
-							err = hns.DeleteHNSEndpoint(hnsEndpointID)
-							Expect(err).ToNot(HaveOccurred())
-						})
+						BeforeEach(deleteQueriedEndpoint)
 						It("responds with err", func() {
 							_, err := contrailDriver.Join(req)
 							Expect(err).To(HaveOccurred())
@@ -666,16 +706,7 @@ var _ = Describe("Contrail Network Driver", func() {
 					})
 
 					Context("queried endpoint doesn't exist", func() {
-						BeforeEach(func() {
-							hnsNets, err := contrailDriver.hnsMgr.ListNetworks()
-							Expect(err).ToNot(HaveOccurred())
-							Expect(hnsNets).To(HaveLen(1))
-							eps, err := hns.ListHNSEndpointsOfNetwork(hnsNets[0].Id)
-							Expect(err).ToNot(HaveOccurred())
-							hnsEndpointID := eps[0].Id
-							err = hns.DeleteHNSEndpoint(hnsEndpointID)
-							Expect(err).ToNot(HaveOccurred())
-						})
+						BeforeEach(deleteQueriedEndpoint)
 						It("responds with err", func() {
 							err := contrailDriver.Leave(req)
 							Expect(err).To(HaveOccurred())
