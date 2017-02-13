@@ -3,10 +3,6 @@ package controller
 import (
 	"fmt"
 
-	"strings"
-
-	"regexp"
-
 	contrail "github.com/Juniper/contrail-go-api"
 	"github.com/Juniper/contrail-go-api/config"
 	"github.com/Juniper/contrail-go-api/mocks"
@@ -34,7 +30,7 @@ func NewClientAndProject(tenant, controllerAddr string, controllerPort int) (*Co
 	c, err := NewController(controllerAddr, controllerPort)
 	Expect(err).ToNot(HaveOccurred())
 
-	ForceDeleteProject(c.ApiClient, tenant)
+	ForceDeleteProject(c, tenant)
 
 	project := new(types.Project)
 	project.SetFQName("domain", []string{common.DomainName, tenant})
@@ -135,51 +131,18 @@ func CreateMockedInstanceIP(c contrail.ApiClient, tenantName string,
 	return allocatedIP
 }
 
-func ForceDeleteProject(c contrail.ApiClient, tenant string) {
-	projToDelete, _ := c.FindByName("project", fmt.Sprintf("%s:%s", common.DomainName,
+func ForceDeleteProject(c *Controller, tenant string) {
+	projToDelete, _ := c.ApiClient.FindByName("project", fmt.Sprintf("%s:%s", common.DomainName,
 		tenant))
 	if projToDelete != nil {
-		deleteElement(c, projToDelete)
+		c.DeleteElementRecursive(projToDelete)
 	}
 }
 
-func CleanupLingeringVM(c contrail.ApiClient, containerID string) {
-	instance, err := types.VirtualMachineByName(c, containerID)
+func CleanupLingeringVM(c *Controller, containerID string) {
+	instance, err := types.VirtualMachineByName(c.ApiClient, containerID)
 	if err == nil {
 		log.Debugln("Cleaning up lingering test vm", instance.GetUuid())
-		deleteElement(c, instance)
-	}
-}
-
-func deleteElement(c contrail.ApiClient, parent contrail.IObject) {
-	log.Debugln("Deleting", parent.GetType(), parent.GetUuid())
-	for err := c.Delete(parent); err != nil; err = c.Delete(parent) {
-		if strings.Contains(err.Error(), "404 Resource") {
-			break
-		} else if strings.Contains(err.Error(), "409 Conflict") {
-			msg := err.Error()
-			// example error message when object has children:
-			// `409 Conflict: Delete when children still present:
-			// ['http://10.7.0.54:8082/virtual-network/23e300f4-ab1a-4d97-a1d9-9ed69b601e17']`
-
-			// This regex finds all strings like:
-			// `virtual-network/23e300f4-ab1a-4d97-a1d9-9ed69b601e17`
-			var re *regexp.Regexp
-			re, err = regexp.Compile(
-				"([a-z-]*\\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
-			Expect(err).ToNot(HaveOccurred())
-			found := re.FindAll([]byte(msg), -1)
-
-			for _, f := range found {
-				split := strings.Split(string(f), "/")
-				typename := split[0]
-				UUID := split[1]
-				var child contrail.IObject
-				child, err = c.FindByUuid(typename, UUID)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(child).ToNot(BeNil())
-				deleteElement(c, child)
-			}
-		}
+		c.DeleteElementRecursive(instance)
 	}
 }

@@ -3,6 +3,8 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/Juniper/contrail-go-api"
 	"github.com/Juniper/contrail-go-api/types"
@@ -176,4 +178,48 @@ func (c *Controller) GetOrCreateInstanceIp(net *types.VirtualNetwork,
 		return nil, err
 	}
 	return allocatedIP, nil
+}
+
+func (c *Controller) DeleteElementRecursive(parent contrail.IObject) error {
+	log.Debugln("Deleting", parent.GetType(), parent.GetUuid())
+	for err := c.ApiClient.Delete(parent); err != nil; err = c.ApiClient.Delete(parent) {
+		if strings.Contains(err.Error(), "404 Resource") {
+			log.Errorln("Failed to delete Contrail resource", err.Error())
+			break
+		} else if strings.Contains(err.Error(), "409 Conflict") {
+			msg := err.Error()
+			// example error message when object has children:
+			// `409 Conflict: Delete when children still present:
+			// ['http://10.7.0.54:8082/virtual-network/23e300f4-ab1a-4d97-a1d9-9ed69b601e17']`
+
+			// This regex finds all strings like:
+			// `virtual-network/23e300f4-ab1a-4d97-a1d9-9ed69b601e17`
+			var re *regexp.Regexp
+			re, err = regexp.Compile(
+				"([a-z-]*\\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
+			if err != nil {
+				return err
+			}
+			found := re.FindAll([]byte(msg), -1)
+
+			for _, f := range found {
+				split := strings.Split(string(f), "/")
+				typename := split[0]
+				UUID := split[1]
+				var child contrail.IObject
+				child, err = c.ApiClient.FindByUuid(typename, UUID)
+				if err != nil {
+					return err
+				}
+				if child == nil {
+					return errors.New("Child object is nil")
+				}
+				err = c.DeleteElementRecursive(child)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }

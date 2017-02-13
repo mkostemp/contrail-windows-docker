@@ -176,6 +176,74 @@ var _ = Describe("HNS wrapper", func() {
 			expectNumberOfEndpoints(numEndpointsOriginal)
 		})
 
+		Specify("Getting HNS endpoint by name works", func() {
+			names := []string{"name1", "name2", "name3"}
+			for _, name := range names {
+				hnsEndpointConfig := &hcsshim.HNSEndpoint{
+					VirtualNetwork: testHnsNetID,
+					Name:           name,
+				}
+				_, err := CreateHNSEndpoint(hnsEndpointConfig)
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			ep, err := GetHNSEndpointByName("name2")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ep.Name).To(Equal("name2"))
+		})
+
+		Context("There's a second HNS network", func() {
+			secondHNSNetID := ""
+			BeforeEach(func() {
+				secondHNSNetID = MockHNSNetwork("other_net_name", netAdapter, subnetCIDR,
+					defaultGW)
+			})
+			AfterEach(func() {
+				err := DeleteHNSNetwork(secondHNSNetID)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			Specify("Listing HNS endpoints of specific network works", func() {
+				config1 := &hcsshim.HNSEndpoint{
+					VirtualNetwork: testHnsNetID,
+				}
+				config2 := &hcsshim.HNSEndpoint{
+					VirtualNetwork: secondHNSNetID,
+				}
+
+				var epsInFirstNet []string
+				var epsInSecondNet []string
+
+				// create 3 endpoints in each network
+				for i := 0; i < 3; i++ {
+					ep1, err := CreateHNSEndpoint(config1)
+					Expect(err).ToNot(HaveOccurred())
+
+					epsInFirstNet = append(epsInFirstNet, ep1)
+
+					ep2, err := CreateHNSEndpoint(config2)
+					Expect(err).ToNot(HaveOccurred())
+
+					epsInSecondNet = append(epsInSecondNet, ep2)
+				}
+
+				foundEpsOfFirstNet, err := ListHNSEndpointsOfNetwork(testHnsNetID)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(foundEpsOfFirstNet).To(HaveLen(3))
+				for _, ep := range foundEpsOfFirstNet {
+					Expect(epsInFirstNet).To(ContainElement(ep.Id))
+					Expect(epsInSecondNet).ToNot(ContainElement(ep.Id))
+				}
+
+				foundEpsOfSecondNet, err := ListHNSEndpointsOfNetwork(secondHNSNetID)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(foundEpsOfSecondNet).To(HaveLen(3))
+				for _, ep := range foundEpsOfSecondNet {
+					Expect(epsInSecondNet).To(ContainElement(ep.Id))
+					Expect(epsInFirstNet).ToNot(ContainElement(ep.Id))
+				}
+			})
+		})
+
 		Specify("Creating endpoint in same subnet works", func() {
 			_, err := CreateHNSEndpoint(&hcsshim.HNSEndpoint{
 				VirtualNetwork: testHnsNetID,
