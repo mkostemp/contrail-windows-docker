@@ -63,6 +63,10 @@
 			"revisionTime": "2016-11-23T20:57:46Z"
 		},
 		{
+			"path": "github.com/docker/libnetwork",
+			"revision": ""
+		},
+		{
 			"checksumSHA1": "Y27Agdpf4FN4HGANJ8cp8+Q6VO4=",
 			"path": "github.com/golang/glog",
 			"revision": "23def4e6c14b4da8ac2ed8007337bc5eb5007998",
