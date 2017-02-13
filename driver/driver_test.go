@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"net"
-
 	"github.com/Juniper/contrail-go-api/types"
 	"github.com/Microsoft/hcsshim"
 	log "github.com/Sirupsen/logrus"
@@ -147,9 +145,15 @@ var _ = Describe("Contrail Network Driver", func() {
 				var req *network.CreateNetworkRequest
 				var genericOptions map[string]interface{}
 				BeforeEach(func() {
+					ipamData := []*network.IPAMData{
+						{
+							Pool: subnetCIDR,
+						},
+					}
 					req = &network.CreateNetworkRequest{
 						NetworkID: "MyAwesomeNet",
 						Options:   make(map[string]interface{}),
+						IPv4Data:  ipamData,
 					}
 					genericOptions = make(map[string]interface{})
 				})
@@ -241,7 +245,8 @@ var _ = Describe("Contrail Network Driver", func() {
 				})
 
 				assertRemovesHNSNet := func() {
-					resp, err := contrailDriver.hnsMgr.GetNetwork(tenantName, networkName)
+					resp, err := contrailDriver.hnsMgr.GetNetwork(tenantName, networkName,
+						subnetCIDR)
 					Expect(err).To(HaveOccurred())
 					Expect(resp).To(BeNil())
 				}
@@ -272,7 +277,7 @@ var _ = Describe("Contrail Network Driver", func() {
 				Context("HNS network doesn't exist", func() {
 					// for example, HNS was hard-reset while docker wasn't.
 					BeforeEach(func() {
-						contrailDriver.hnsMgr.DeleteNetwork(tenantName, networkName)
+						contrailDriver.hnsMgr.DeleteNetwork(tenantName, networkName, subnetCIDR)
 						err := removeDockerNetwork(docker, dockerNetID)
 						Expect(err).ToNot(HaveOccurred())
 					})
@@ -345,7 +350,8 @@ var _ = Describe("Contrail Network Driver", func() {
 						// for example, HNS was hard-reset while docker wasn't.
 						containerID := ""
 						BeforeEach(func() {
-							contrailDriver.hnsMgr.DeleteNetwork(tenantName, networkName)
+							contrailDriver.hnsMgr.DeleteNetwork(tenantName, networkName,
+								subnetCIDR)
 						})
 						AfterEach(func() {
 							err := docker.ContainerRemove(context.Background(), containerID,
@@ -413,7 +419,8 @@ var _ = Describe("Contrail Network Driver", func() {
 						})
 
 						It("configures HNS endpoint", func() {
-							resp, err := docker.ContainerInspect(context.Background(), containerID)
+							resp, err := docker.ContainerInspect(context.Background(),
+								containerID)
 							Expect(err).ToNot(HaveOccurred())
 							Expect(resp).ToNot(BeNil())
 							ip := resp.NetworkSettings.Networks[networkName].IPAddress
@@ -426,7 +433,7 @@ var _ = Describe("Contrail Network Driver", func() {
 
 							ep := endpoints[0]
 							Expect(ep).ToNot(BeNil(), "Endpoint not found")
-							Expect(ep.IPAddress).To(Equal(net.ParseIP(ip)))
+							Expect(ep.IPAddress.String()).To(Equal(ip))
 							formattedMac := strings.Replace(strings.ToUpper(mac), ":", "-", -1)
 							Expect(ep.MacAddress).To(Equal(formattedMac))
 							Expect(ep.GatewayAddress).To(Equal(gw))

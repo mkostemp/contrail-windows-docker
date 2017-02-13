@@ -16,14 +16,14 @@ type HNSManager struct {
 	// for now, just look in HNS by name.
 }
 
-func contrailHNSNetName(tenant, netName string) string {
-	return fmt.Sprintf("%s:%s:%s", common.HNSNetworkPrefix, tenant, netName)
+func contrailHNSNetName(tenant, netName, subnetCIDR string) string {
+	return fmt.Sprintf("%s:%s:%s:%s", common.HNSNetworkPrefix, tenant, netName, subnetCIDR)
 }
 
 func (m *HNSManager) CreateNetwork(netAdapter, tenantName, networkName, subnetCIDR,
 	defaultGW string) (*hcsshim.HNSNetwork, error) {
 
-	hnsNetName := contrailHNSNetName(tenantName, networkName)
+	hnsNetName := contrailHNSNetName(tenantName, networkName, subnetCIDR)
 
 	net, err := hns.GetHNSNetworkByName(hnsNetName)
 	if net != nil {
@@ -57,8 +57,9 @@ func (m *HNSManager) CreateNetwork(netAdapter, tenantName, networkName, subnetCI
 	return hnsNetwork, nil
 }
 
-func (m *HNSManager) GetNetwork(tenantName, networkName string) (*hcsshim.HNSNetwork, error) {
-	hnsNetName := contrailHNSNetName(tenantName, networkName)
+func (m *HNSManager) GetNetwork(tenantName, networkName, subnetCIDR string) (*hcsshim.HNSNetwork,
+	error) {
+	hnsNetName := contrailHNSNetName(tenantName, networkName, subnetCIDR)
 	hnsNetwork, err := hns.GetHNSNetworkByName(hnsNetName)
 	if err != nil {
 		return nil, err
@@ -69,8 +70,8 @@ func (m *HNSManager) GetNetwork(tenantName, networkName string) (*hcsshim.HNSNet
 	return hnsNetwork, nil
 }
 
-func (m *HNSManager) DeleteNetwork(tenantName, networkName string) error {
-	hnsNetwork, err := m.GetNetwork(tenantName, networkName)
+func (m *HNSManager) DeleteNetwork(tenantName, networkName, subnetCIDR string) error {
+	hnsNetwork, err := m.GetNetwork(tenantName, networkName, subnetCIDR)
 	if err != nil {
 		return err
 	}
@@ -95,7 +96,7 @@ func (m *HNSManager) ListNetworks() ([]hcsshim.HNSNetwork, error) {
 	}
 	for _, net := range nets {
 		splitName := strings.Split(net.Name, ":")
-		if len(splitName) == 3 {
+		if len(splitName) == 4 {
 			if splitName[0] == common.HNSNetworkPrefix {
 				validNets = append(validNets, net)
 			}

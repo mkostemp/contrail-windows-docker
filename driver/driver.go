@@ -14,6 +14,7 @@ import (
 
 	"context"
 
+	"github.com/Juniper/contrail-go-api/types"
 	"github.com/Microsoft/go-winio"
 	"github.com/Microsoft/hcsshim"
 	log "github.com/Sirupsen/logrus"
@@ -35,8 +36,9 @@ type ContrailDriver struct {
 }
 
 type NetworkMeta struct {
-	tenant  string
-	network string
+	tenant     string
+	network    string
+	subnetCIDR string
 }
 
 func NewDriver(adapter string, c *controller.Controller) *ContrailDriver {
@@ -143,6 +145,12 @@ func (d *ContrailDriver) CreateNetwork(req *network.CreateNetworkRequest) error 
 		return errors.New("Network name not specified")
 	}
 
+	// this is subnet already in CIDR format
+	if len(req.IPv4Data) == 0 {
+		return errors.New("Docker subnet IPv4 data missing")
+	}
+	ipPool := req.IPv4Data[0].Pool
+
 	// Check if network is already created in Contrail.
 	contrailNetwork, err := d.controller.GetNetwork(tenant.(string), netName.(string))
 	if err != nil {
@@ -154,20 +162,19 @@ func (d *ContrailDriver) CreateNetwork(req *network.CreateNetworkRequest) error 
 
 	log.Infoln("Got Contrail network", contrailNetwork.GetDisplayName())
 
-	contrailIpam, err := d.controller.GetIpamSubnet(contrailNetwork)
+	contrailIpam, err := d.controller.GetIpamSubnet(contrailNetwork, ipPool)
 	if err != nil {
 		return err
 	}
-	subnet := contrailIpam.Subnet
-	subnetCIDR := fmt.Sprintf("%s/%v", subnet.IpPrefix, subnet.IpPrefixLen)
+	subnetCIDR := d.getContrailSubnetCIDR(contrailIpam)
 
-	gw, err := d.controller.GetDefaultGatewayIp(contrailNetwork)
-	if err != nil {
-		return err
+	contrailGateway := contrailIpam.DefaultGateway
+	if contrailGateway == "" {
+		return errors.New("Default GW is empty")
 	}
 
 	_, err = d.hnsMgr.CreateNetwork(d.networkAdapter, tenant.(string), netName.(string),
-		subnetCIDR, gw)
+		subnetCIDR, contrailGateway)
 
 	return err
 }
@@ -200,7 +207,8 @@ func (d *ContrailDriver) DeleteNetwork(req *network.DeleteNetworkRequest) error 
 	for _, hnsMeta := range hnsNetsMeta {
 		matchFound := false
 		for _, dockerMeta := range dockerNetsMeta {
-			if dockerMeta.tenant == hnsMeta.tenant && dockerMeta.network == hnsMeta.network {
+			if dockerMeta.tenant == hnsMeta.tenant && dockerMeta.network == hnsMeta.network &&
+				dockerMeta.subnetCIDR == hnsMeta.subnetCIDR {
 				matchFound = true
 				break
 			}
@@ -214,7 +222,7 @@ func (d *ContrailDriver) DeleteNetwork(req *network.DeleteNetworkRequest) error 
 	if toRemove == nil {
 		return errors.New("During handling of DeleteNetwork, couldn't find net to remove")
 	}
-	return d.hnsMgr.DeleteNetwork(toRemove.tenant, toRemove.network)
+	return d.hnsMgr.DeleteNetwork(toRemove.tenant, toRemove.network, toRemove.subnetCIDR)
 }
 
 func (d *ContrailDriver) FreeNetwork(req *network.FreeNetworkRequest) error {
@@ -272,10 +280,16 @@ func (d *ContrailDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*ne
 		return nil, err
 	}
 
-	contrailGateway, err := d.controller.GetDefaultGatewayIp(contrailNetwork)
-	log.Infoln("Retreived GW address:", contrailGateway)
+	contrailIpam, err := d.controller.GetIpamSubnet(contrailNetwork, meta.subnetCIDR)
 	if err != nil {
 		return nil, err
+	}
+	contrailSubnetCIDR := d.getContrailSubnetCIDR(contrailIpam)
+
+	contrailGateway := contrailIpam.DefaultGateway
+	log.Infoln("Retreived GW address:", contrailGateway)
+	if contrailGateway == "" {
+		return nil, errors.New("Default GW is empty")
 	}
 
 	contrailMac, err := d.controller.GetInterfaceMac(contrailVif)
@@ -287,7 +301,7 @@ func (d *ContrailDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*ne
 	// HNS needs MACs like 11-22-AA-BB-CC-DD
 	formattedMac := strings.Replace(strings.ToUpper(contrailMac), ":", "-", -1)
 
-	hnsNet, err := d.hnsMgr.GetNetwork(meta.tenant, meta.network)
+	hnsNet, err := d.hnsMgr.GetNetwork(meta.tenant, meta.network, contrailSubnetCIDR)
 	if err != nil {
 		return nil, err
 	}
@@ -306,11 +320,6 @@ func (d *ContrailDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*ne
 	}
 
 	// TODO JW-12: talk to vRouter here
-
-	contrailIpam, err := d.controller.GetIpamSubnet(contrailNetwork)
-	if err != nil {
-		return nil, err
-	}
 
 	epAddressCIDR := fmt.Sprintf("%s/%v", contrailIP.GetInstanceIpAddress(),
 		contrailIpam.Subnet.IpPrefixLen)
@@ -475,6 +484,12 @@ func (d *ContrailDriver) networkMetaFromDockerNetwork(dockerNetID string) (*Netw
 		return nil, errors.New("Retreived network has no Contrail network name specfied")
 	}
 
+	ipamCfg := dockerNetwork.IPAM.Config
+	if len(ipamCfg) == 0 {
+		return nil, errors.New("No configured subnets in docker network")
+	}
+	meta.subnetCIDR = ipamCfg[0].Subnet
+
 	return &meta, nil
 }
 
@@ -496,8 +511,9 @@ func (d *ContrailDriver) dockerNetworksMeta() ([]NetworkMeta, error) {
 		networkContrail, networkExists := net.Options["network"]
 		if tenantExists && networkExists {
 			meta = append(meta, NetworkMeta{
-				tenant:  tenantContrail,
-				network: networkContrail,
+				tenant:     tenantContrail,
+				network:    networkContrail,
+				subnetCIDR: net.IPAM.Config[0].Subnet,
 			})
 		}
 	}
@@ -516,10 +532,16 @@ func (d *ContrailDriver) hnsNetworksMeta() ([]NetworkMeta, error) {
 		// hnsManager.ListNetworks() already sanitizes network name
 		tenantName := splitName[1]
 		networkName := splitName[2]
+		subnetCIDR := splitName[3]
 		meta = append(meta, NetworkMeta{
-			tenant:  tenantName,
-			network: networkName,
+			tenant:     tenantName,
+			network:    networkName,
+			subnetCIDR: subnetCIDR,
 		})
 	}
 	return meta, nil
+}
+
+func (d *ContrailDriver) getContrailSubnetCIDR(ipam *types.IpamSubnetType) string {
+	return fmt.Sprintf("%s/%v", ipam.Subnet.IpPrefix, ipam.Subnet.IpPrefixLen)
 }

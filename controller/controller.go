@@ -76,35 +76,69 @@ func (c *Controller) GetNetwork(tenantName, networkName string) (*types.VirtualN
 	return net, nil
 }
 
-func (c *Controller) GetIpamSubnet(net *types.VirtualNetwork) (*types.IpamSubnetType, error) {
+// GetIpamSubnet returns IPAM subnet of specified virtual network with specified CIDR.
+// If virtual network has only one subnet, CIDR is ignored.
+func (c *Controller) GetIpamSubnet(net *types.VirtualNetwork, CIDR string) (
+	*types.IpamSubnetType, error) {
+
+	if strings.HasPrefix(CIDR, "0.0.0.0") {
+		// this means that the user didn't provide a subnet
+		CIDR = ""
+	}
+
 	ipamReferences, err := net.GetNetworkIpamRefs()
 	if err != nil {
 		log.Errorf("Failed to get ipam references: %v", err)
 		return nil, err
 	}
-	if len(ipamReferences) == 0 {
-		err = errors.New("Ipam references list is empty")
+
+	var allIpamSubnets []types.IpamSubnetType
+	for _, ref := range ipamReferences {
+		attribute := ref.Attr
+		ipamSubnets := attribute.(types.VnSubnetsType).IpamSubnets
+		for _, ipamSubnet := range ipamSubnets {
+			allIpamSubnets = append(allIpamSubnets, ipamSubnet)
+		}
+	}
+
+	if len(allIpamSubnets) == 0 {
+		err = errors.New("No Ipam subnets found")
 		log.Error(err)
 		return nil, err
 	}
-	attribute := ipamReferences[0].Attr
-	ipamSubnets := attribute.(types.VnSubnetsType).IpamSubnets
-	if len(ipamSubnets) == 0 {
-		err = errors.New("Ipam subnets list is empty")
-		log.Error(err)
-		return nil, err
+
+	if CIDR == "" {
+		if len(allIpamSubnets) > 1 {
+			err = errors.New("Didn't specify subnet CIDR and there are multiple Contrail subnets")
+			log.Error(err)
+			return nil, err
+		}
+		// return the one and only subnet
+		return &allIpamSubnets[0], nil
 	}
-	return &ipamSubnets[0], nil
+
+	// there are multiple subnets to choose from
+	for _, ipam := range allIpamSubnets {
+
+		thisCIDR := fmt.Sprintf("%s/%v", ipam.Subnet.IpPrefix,
+			ipam.Subnet.IpPrefixLen)
+
+		if CIDR != "" {
+			if thisCIDR == CIDR {
+				return &ipam, nil
+			}
+		}
+	}
+
+	err = errors.New("Subnet with specified CIDR not found")
+	log.Error(err)
+	return nil, err
 }
 
-func (c *Controller) GetDefaultGatewayIp(net *types.VirtualNetwork) (string, error) {
-	subnet, err := c.GetIpamSubnet(net)
-	if err != nil {
-		return "", err
-	}
+func (c *Controller) GetDefaultGatewayIp(subnet *types.IpamSubnetType) (string, error) {
 	gw := subnet.DefaultGateway
 	if gw == "" {
-		err = errors.New("Default GW is empty")
+		err := errors.New("Default GW is empty")
 		log.Error(err)
 		return "", err
 	}

@@ -133,44 +133,56 @@ var _ = Describe("Controller", func() {
 	})
 
 	Describe("getting Contrail subnet info", func() {
-		Context("network has subnet with default gateway", func() {
+		assertGettingSubnetFails := func(getTestedNet func() *types.VirtualNetwork,
+			CIDR string) func() {
+			return func() {
+				_, err := client.GetIpamSubnet(getTestedNet(), CIDR)
+				Expect(err).To(HaveOccurred())
+			}
+		}
+		Context("network has one subnet with default gateway", func() {
 			var testNetwork *types.VirtualNetwork
 			BeforeEach(func() {
 				testNetwork = CreateMockedNetwork(client.ApiClient, networkName, project)
 				AddSubnetWithDefaultGateway(client.ApiClient, subnetPrefix, defaultGW,
 					subnetMask, testNetwork)
 			})
-			Specify("getting default gw IP works", func() {
-				gwAddr, err := client.GetDefaultGatewayIp(testNetwork)
+			Specify("getting subnet meta works", func() {
+				ipam, err := client.GetIpamSubnet(testNetwork, "")
 				Expect(err).ToNot(HaveOccurred())
-				Expect(gwAddr).ToNot(Equal(""))
-			})
-			Specify("getting subnet prefix and prefix len works", func() {
-				ipam, err := client.GetIpamSubnet(testNetwork)
-				Expect(err).ToNot(HaveOccurred())
+				Expect(ipam.DefaultGateway).To(Equal(defaultGW))
 				Expect(ipam.Subnet.IpPrefix).To(Equal(subnetPrefix))
 				Expect(ipam.Subnet.IpPrefixLen).To(Equal(subnetMask))
 			})
+			Specify("getting subnet when specifying CIDR works", func() {
+				_, err := client.GetIpamSubnet(testNetwork, subnetCIDR)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			Specify("getting subnet when specifying CIDR not in Contrail fails",
+				assertGettingSubnetFails(func() *types.VirtualNetwork {
+					return testNetwork
+				}, "1.2.3.4/16"))
 		})
-		Context("network has subnet without default gateway", func() {
+		Context("network has one subnet without default gateway", func() {
 			var testNetwork *types.VirtualNetwork
 			BeforeEach(func() {
 				testNetwork = CreateMockedNetworkWithSubnet(client.ApiClient, networkName,
 					subnetCIDR, project)
 			})
 			Specify("getting default gw IP returns error", func() {
-				gwAddr, err := client.GetDefaultGatewayIp(testNetwork)
+				ipam, err := client.GetIpamSubnet(testNetwork, "")
+				Expect(err).ToNot(HaveOccurred())
 				if useActualController {
-					Expect(gwAddr).ToNot(Equal(""))
+					Expect(ipam.DefaultGateway).ToNot(Equal(""))
 					Expect(err).ToNot(HaveOccurred())
 				} else {
 					// mocked controller lacks some logic here
-					Expect(gwAddr).To(Equal(""))
+					Expect(ipam.DefaultGateway).To(Equal(""))
 					Expect(err).To(HaveOccurred())
 				}
 			})
 			Specify("getting subnet prefix and prefix len works", func() {
-				ipam, err := client.GetIpamSubnet(testNetwork)
+				ipam, err := client.GetIpamSubnet(testNetwork, "")
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ipam.Subnet.IpPrefix).To(Equal(subnetPrefix))
 				Expect(ipam.Subnet.IpPrefixLen).To(Equal(subnetMask))
@@ -181,15 +193,58 @@ var _ = Describe("Controller", func() {
 			BeforeEach(func() {
 				testNetwork = CreateMockedNetwork(client.ApiClient, networkName, project)
 			})
-			Specify("getting default gw IP returns error", func() {
-				gwAddr, err := client.GetDefaultGatewayIp(testNetwork)
-				Expect(err).To(HaveOccurred())
-				Expect(gwAddr).To(Equal(""))
+			Specify("getting subnet returns error",
+				assertGettingSubnetFails(func() *types.VirtualNetwork {
+					return testNetwork
+				}, ""))
+		})
+		Context("network has multiple subnets", func() {
+			var testNetwork *types.VirtualNetwork
+			const (
+				prefix1 = "10.10.10.0"
+				gw1     = "10.10.10.1"
+				cidr1   = "10.10.10.0/24"
+				prefix2 = "10.20.20.0"
+				gw2     = "10.20.20.1"
+				cidr2   = "10.20.20.0/24"
+			)
+			BeforeEach(func() {
+				testNetwork = CreateMockedNetwork(client.ApiClient, networkName, project)
+				AddSubnetWithDefaultGateway(client.ApiClient, prefix1, gw1, 24,
+					testNetwork)
+				AddSubnetWithDefaultGateway(client.ApiClient, prefix2, gw2, 24,
+					testNetwork)
 			})
-			Specify("getting subnet prefix and prefix len returns error", func() {
-				ipam, err := client.GetIpamSubnet(testNetwork)
-				Expect(err).To(HaveOccurred())
-				Expect(ipam).To(BeNil())
+			Context("user specified valid subnet", func() {
+				Specify("getting specific subnets works", func() {
+					ipam1, err := client.GetIpamSubnet(testNetwork, cidr1)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(ipam1.DefaultGateway).To(Equal(gw1))
+
+					ipam2, err := client.GetIpamSubnet(testNetwork, cidr2)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(ipam2.DefaultGateway).To(Equal(gw2))
+				})
+			})
+			Context("user didn't specify a subnet", func() {
+				Specify("getting subnet1 returns error",
+					assertGettingSubnetFails(func() *types.VirtualNetwork {
+						return testNetwork
+					}, ""))
+				Specify("getting subnet2 returns error",
+					assertGettingSubnetFails(func() *types.VirtualNetwork {
+						return testNetwork
+					}, ""))
+			})
+			Context("user specified invalid subnet", func() {
+				Specify("getting subnet1 returns error",
+					assertGettingSubnetFails(func() *types.VirtualNetwork {
+						return testNetwork
+					}, "10.12.13.0/24"))
+				Specify("getting subnet2 returns error",
+					assertGettingSubnetFails(func() *types.VirtualNetwork {
+						return testNetwork
+					}, "10.12.13.0/24"))
 			})
 		})
 	})

@@ -57,7 +57,7 @@ var _ = Describe("HNS manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 		Specify("getting the HNS network returns error", func() {
-			net, err := hnsMgr.GetNetwork(tenantName, networkName)
+			net, err := hnsMgr.GetNetwork(tenantName, networkName, subnetCIDR)
 			Expect(err).To(HaveOccurred())
 			Expect(net).To(BeNil())
 		})
@@ -66,7 +66,7 @@ var _ = Describe("HNS manager", func() {
 	Context("specified network already exists", func() {
 		var existingNetID string
 		BeforeEach(func() {
-			hnsNetName := fmt.Sprintf("Contrail:%s:%s", tenantName, networkName)
+			hnsNetName := fmt.Sprintf("Contrail:%s:%s:%s", tenantName, networkName, subnetCIDR)
 			existingNetID = hns.MockHNSNetwork(hnsNetName, netAdapter, subnetCIDR, defaultGW)
 		})
 
@@ -78,7 +78,7 @@ var _ = Describe("HNS manager", func() {
 		})
 
 		Specify("getting the network returns it", func() {
-			net, err := hnsMgr.GetNetwork(tenantName, networkName)
+			net, err := hnsMgr.GetNetwork(tenantName, networkName, subnetCIDR)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(net.Id).To(Equal(existingNetID))
 		})
@@ -97,7 +97,7 @@ var _ = Describe("HNS manager", func() {
 			})
 
 			Specify("deleting the network returns error", func() {
-				err := hnsMgr.DeleteNetwork(tenantName, networkName)
+				err := hnsMgr.DeleteNetwork(tenantName, networkName, subnetCIDR)
 				Expect(err).To(HaveOccurred())
 
 				eps, err := hns.ListHNSEndpoints()
@@ -110,7 +110,7 @@ var _ = Describe("HNS manager", func() {
 			Specify("deleting the network removes it", func() {
 				netsBefore, err := hns.ListHNSNetworks()
 				Expect(err).ToNot(HaveOccurred())
-				err = hnsMgr.DeleteNetwork(tenantName, networkName)
+				err = hnsMgr.DeleteNetwork(tenantName, networkName, subnetCIDR)
 				Expect(err).ToNot(HaveOccurred())
 				netsAfter, err := hns.ListHNSNetworks()
 				Expect(err).ToNot(HaveOccurred())
@@ -122,9 +122,11 @@ var _ = Describe("HNS manager", func() {
 	Describe("Listing Contrail networks", func() {
 		BeforeEach(func() {
 			names := []string{
-				fmt.Sprintf("Contrail:%s:%s", "tenant1", "netname1"),
-				fmt.Sprintf("Contrail:%s:%s", "tenant2", "netname2"),
+				fmt.Sprintf("Contrail:%s:%s:%s", "tenant1", "netname1", "1.2.3.4/24"),
+				fmt.Sprintf("Contrail:%s:%s:%s", "tenant2", "netname2", "2.3.4.5/24"),
 				fmt.Sprintf("Contrail:%s", "invalid_num_of_fields"),
+				fmt.Sprintf("Contrail:%s:%s", "invalid", "num_of_fields"),
+				fmt.Sprintf("Contrail:%s:%s:%s:%s", "invalid", "num", "of", "fields"),
 				"some_other_name",
 			}
 			for _, n := range names {

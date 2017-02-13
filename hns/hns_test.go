@@ -324,6 +324,15 @@ var _ = Describe("HNS wrapper", func() {
 			}
 			expectNumberOfEndpoints(3)
 		})
+
+		Specify("Creating endpoint with name containing special characters works", func() {
+			cfg := &hcsshim.HNSEndpoint{
+				VirtualNetwork: testHnsNetID,
+				Name:           "A:B123/123",
+			}
+			_, err := CreateHNSEndpoint(cfg)
+			Expect(err).ToNot(HaveOccurred())
+		})
 	})
 
 	Context("HNS network doesn't exist", func() {
