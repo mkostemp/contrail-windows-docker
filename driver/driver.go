@@ -83,6 +83,34 @@ func (d *ContrailDriver) StartServing() error {
 
 	log.Infoln("Started serving on ", pipeAddr)
 
+	rootNetwork, err := hns.GetHNSNetworkByName(common.RootNetworkName)
+	if err != nil {
+		return err
+	}
+	if rootNetwork == nil {
+
+		subnets := []hcsshim.Subnet{
+			{
+				AddressPrefix:  "0.0.0.0/24",
+				GatewayAddress: "0.0.0.0",
+			},
+		}
+		configuration := &hcsshim.HNSNetwork{
+			Name:               common.RootNetworkName,
+			Type:               "transparent",
+			NetworkAdapterName: d.networkAdapter,
+			Subnets:            subnets,
+		}
+		rootNetID, err := hns.CreateHNSNetwork(configuration)
+		if err != nil {
+			return err
+		}
+
+		log.Infoln("Created root HNS network:", rootNetID)
+	} else {
+		log.Infoln("Existing root HNS network found:", rootNetwork.Id)
+	}
+
 	return nil
 }
 

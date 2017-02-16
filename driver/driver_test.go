@@ -51,6 +51,14 @@ func TestDriver(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	cleanupAll()
+})
+
+var _ = AfterSuite(func() {
+	cleanupAll()
+})
+
+func cleanupAll() {
 	err := common.HardResetHNS()
 	Expect(err).ToNot(HaveOccurred())
 	err = common.RestartDocker()
@@ -58,7 +66,7 @@ var _ = BeforeSuite(func() {
 
 	docker := getDockerClient()
 	cleanupAllDockerNetworksAndContainers(docker)
-})
+}
 
 var contrailController *controller.Controller
 var contrailDriver *ContrailDriver
@@ -120,6 +128,41 @@ var _ = Describe("Contrail Network Driver", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		err = common.RestartDocker()
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	Specify("creating vswitch for forwarding extension works", func() {
+		err := contrailDriver.StartServing()
+		Expect(err).ToNot(HaveOccurred())
+
+		network, err := hns.GetHNSNetworkByName(common.RootNetworkName)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(network).ToNot(BeNil())
+
+		Expect(network.Name).To(Equal(common.RootNetworkName))
+
+		By("root network is not deleted upon shutdown of driver")
+		err = contrailDriver.StopServing()
+		Expect(err).ToNot(HaveOccurred())
+
+		_, err = hns.GetHNSNetworkByName(common.RootNetworkName)
+		Expect(err).ToNot(HaveOccurred())
+
+		By("if root network exists upon driver startup, additional one is not created")
+		netsBefore, err := hns.ListHNSNetworks()
+		Expect(err).ToNot(HaveOccurred())
+
+		err = contrailDriver.StartServing()
+		Expect(err).ToNot(HaveOccurred())
+		_, err = hns.GetHNSNetworkByName(common.RootNetworkName)
+		Expect(err).ToNot(HaveOccurred())
+
+		netsAfter, err := hns.ListHNSNetworks()
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(len(netsBefore)).To(Equal(len(netsAfter)))
+
+		err = contrailDriver.StopServing()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
