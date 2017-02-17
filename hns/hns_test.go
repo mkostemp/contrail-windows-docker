@@ -403,7 +403,7 @@ var _ = Describe("HNS race conditions workarounds", func() {
 		}
 		configuration := &hcsshim.HNSNetwork{
 			Type:               "transparent",
-			NetworkAdapterName: "Ethernet0",
+			NetworkAdapterName: netAdapter,
 			Subnets:            subnets,
 		}
 
@@ -457,7 +457,7 @@ var _ = Describe("HNS race conditions workarounds", func() {
 
 		configuration := &hcsshim.HNSNetwork{
 			Type:               "transparent",
-			NetworkAdapterName: "Ethernet0",
+			NetworkAdapterName: netAdapter,
 		}
 
 		Specify("error does not occur when we don't supply a subnet to new network", func() {
