@@ -363,20 +363,17 @@ var _ = Describe("On requests from docker daemon", func() {
 			})
 			It("allocates Contrail resources", func() {
 				net, err := types.VirtualNetworkByName(contrailController.ApiClient,
-					fmt.Sprintf("%s:%s:%s", common.DomainName, tenantName,
-						networkName))
+					fmt.Sprintf("%s:%s:%s", common.DomainName, tenantName, networkName))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(net).ToNot(BeNil())
 
 				// TODO JW-187. For now, VM name is the same as Endpoint ID, not
 				// Container ID
-				dockerNet, err := docker.NetworkInspect(context.Background(),
-					dockerNetID)
+				dockerNet, err := docker.NetworkInspect(context.Background(), dockerNetID)
 				Expect(err).ToNot(HaveOccurred())
 				vmName := dockerNet.Containers[containerID].EndpointID
 
-				inst, err := types.VirtualMachineByName(contrailController.ApiClient,
-					vmName)
+				inst, err := types.VirtualMachineByName(contrailController.ApiClient, vmName)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(inst).ToNot(BeNil())
 
@@ -385,8 +382,7 @@ var _ = Describe("On requests from docker daemon", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(vif).ToNot(BeNil())
 
-				ip, err := types.InstanceIpByName(contrailController.ApiClient,
-					vif.GetName())
+				ip, err := types.InstanceIpByName(contrailController.ApiClient, vif.GetName())
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ip).ToNot(BeNil())
 
@@ -467,8 +463,7 @@ var _ = Describe("On requests from docker daemon", func() {
 			Expect(err).ToNot(HaveOccurred())
 			vmName := dockerNet.Containers[containerID].EndpointID
 
-			contrailInst, err = types.VirtualMachineByName(contrailController.ApiClient,
-				vmName)
+			contrailInst, err = types.VirtualMachineByName(contrailController.ApiClient, vmName)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(contrailInst).ToNot(BeNil())
 
@@ -499,8 +494,8 @@ var _ = Describe("On requests from docker daemon", func() {
 				contrailInst.GetName())
 			Expect(err).To(HaveOccurred())
 
-			_, err = types.VirtualMachineInterfaceByName(
-				contrailController.ApiClient, contrailInst.GetName())
+			_, err = types.VirtualMachineInterfaceByName(contrailController.ApiClient,
+				contrailInst.GetName())
 			Expect(err).To(HaveOccurred())
 
 			_, err = types.InstanceIpByName(contrailController.ApiClient,
@@ -514,8 +509,7 @@ var _ = Describe("On requests from docker daemon", func() {
 			})
 			It("removes docker endpoint", assertRemovesDockerEndpoint)
 			It("removes HNS endpoint", assertRemovesHNSEndpoint)
-			It("removes virtual-machine and its children in Contrail",
-				assertRemovesContrailVM)
+			It("removes virtual-machine and its children in Contrail", assertRemovesContrailVM)
 			PIt("removes port from vRouter Agent", func() {})
 		})
 
@@ -526,8 +520,7 @@ var _ = Describe("On requests from docker daemon", func() {
 				stopAndRemoveDockerContainer(docker, containerID)
 			})
 			It("removes docker endpoint", assertRemovesDockerEndpoint)
-			It("removes virtual-machine and its children in Contrail",
-				assertRemovesContrailVM)
+			It("removes virtual-machine and its children in Contrail", assertRemovesContrailVM)
 			PIt("removes port from vRouter Agent", func() {})
 		})
 
@@ -738,8 +731,7 @@ func runDockerContainer(docker *dockerClient.Client) (string, error) {
 
 func stopAndRemoveDockerContainer(docker *dockerClient.Client, containerID string) {
 	timeout := time.Second * 5
-	err := docker.ContainerStop(context.Background(), containerID,
-		&timeout)
+	err := docker.ContainerStop(context.Background(), containerID, &timeout)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = docker.ContainerRemove(context.Background(), containerID,
@@ -788,7 +780,7 @@ func cleanupAllDockerNetworksAndContainers(docker *dockerClient.Client) {
 	Expect(err).ToNot(HaveOccurred())
 	for _, net := range nets {
 		log.Debugln("Cleaning up endpoints of docker network", net.Name)
-		for containerID, _ := range net.Containers {
+		for containerID := range net.Containers {
 			log.Debugln("Stopping and removing container", containerID)
 			stopAndRemoveDockerContainer(docker, containerID)
 		}
