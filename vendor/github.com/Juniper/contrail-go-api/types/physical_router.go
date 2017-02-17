@@ -20,12 +20,15 @@ const (
 	physical_router_physical_router_snmp_credentials
 	physical_router_physical_router_junos_service_ports
 	physical_router_id_perms
+	physical_router_perms2
+	physical_router_annotations
 	physical_router_display_name
 	physical_router_virtual_router_refs
 	physical_router_bgp_router_refs
 	physical_router_virtual_network_refs
 	physical_router_physical_interfaces
 	physical_router_logical_interfaces
+	physical_router_instance_ip_back_refs
 )
 
 type PhysicalRouter struct {
@@ -39,12 +42,15 @@ type PhysicalRouter struct {
 	physical_router_snmp_credentials SNMPCredentials
 	physical_router_junos_service_ports JunosServicePorts
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
 	virtual_router_refs contrail.ReferenceList
 	bgp_router_refs contrail.ReferenceList
 	virtual_network_refs contrail.ReferenceList
 	physical_interfaces contrail.ReferenceList
 	logical_interfaces contrail.ReferenceList
+	instance_ip_back_refs contrail.ReferenceList
         valid uint64
         modified uint64
         baseMap map[string]contrail.ReferenceList
@@ -174,6 +180,24 @@ func (obj *PhysicalRouter) GetIdPerms() IdPermsType {
 func (obj *PhysicalRouter) SetIdPerms(value *IdPermsType) {
         obj.id_perms = *value
         obj.modified |= physical_router_id_perms
+}
+
+func (obj *PhysicalRouter) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *PhysicalRouter) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= physical_router_perms2
+}
+
+func (obj *PhysicalRouter) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *PhysicalRouter) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= physical_router_annotations
 }
 
 func (obj *PhysicalRouter) GetDisplayName() string {
@@ -480,6 +504,26 @@ func (obj *PhysicalRouter) SetVirtualNetworkList(
 }
 
 
+func (obj *PhysicalRouter) readInstanceIpBackRefs() error {
+        if !obj.IsTransient() &&
+                (obj.valid & physical_router_instance_ip_back_refs == 0) {
+                err := obj.GetField(obj, "instance_ip_back_refs")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *PhysicalRouter) GetInstanceIpBackRefs() (
+        contrail.ReferenceList, error) {
+        err := obj.readInstanceIpBackRefs()
+        if err != nil {
+                return nil, err
+        }
+        return obj.instance_ip_back_refs, nil
+}
+
 func (obj *PhysicalRouter) MarshalJSON() ([]byte, error) {
         msg := map[string]*json.RawMessage {
         }
@@ -567,6 +611,24 @@ func (obj *PhysicalRouter) MarshalJSON() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & physical_router_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & physical_router_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & physical_router_display_name != 0 {
@@ -674,6 +736,18 @@ func (obj *PhysicalRouter) UnmarshalJSON(body []byte) error {
                                 obj.valid |= physical_router_id_perms
                         }
                         break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= physical_router_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= physical_router_annotations
+                        }
+                        break
                 case "display_name":
                         err = json.Unmarshal(value, &obj.display_name)
                         if err == nil {
@@ -708,6 +782,12 @@ func (obj *PhysicalRouter) UnmarshalJSON(body []byte) error {
                         err = json.Unmarshal(value, &obj.logical_interfaces)
                         if err == nil {
                                 obj.valid |= physical_router_logical_interfaces
+                        }
+                        break
+                case "instance_ip_back_refs":
+                        err = json.Unmarshal(value, &obj.instance_ip_back_refs)
+                        if err == nil {
+                                obj.valid |= physical_router_instance_ip_back_refs
                         }
                         break
                 }
@@ -805,6 +885,24 @@ func (obj *PhysicalRouter) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & physical_router_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & physical_router_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & physical_router_display_name != 0 {

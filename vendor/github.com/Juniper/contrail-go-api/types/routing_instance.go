@@ -12,6 +12,8 @@ import (
 
 const (
 	routing_instance_id_perms uint64 = 1 << iota
+	routing_instance_perms2
+	routing_instance_annotations
 	routing_instance_display_name
 	routing_instance_virtual_machine_interface_back_refs
 )
@@ -19,6 +21,8 @@ const (
 type RoutingInstance struct {
         contrail.ObjectBase
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
 	virtual_machine_interface_back_refs contrail.ReferenceList
         valid uint64
@@ -80,6 +84,24 @@ func (obj *RoutingInstance) SetIdPerms(value *IdPermsType) {
         obj.modified |= routing_instance_id_perms
 }
 
+func (obj *RoutingInstance) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *RoutingInstance) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= routing_instance_perms2
+}
+
+func (obj *RoutingInstance) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *RoutingInstance) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= routing_instance_annotations
+}
+
 func (obj *RoutingInstance) GetDisplayName() string {
         return obj.display_name
 }
@@ -126,6 +148,24 @@ func (obj *RoutingInstance) MarshalJSON() ([]byte, error) {
                 msg["id_perms"] = &value
         }
 
+        if obj.modified & routing_instance_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & routing_instance_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
+        }
+
         if obj.modified & routing_instance_display_name != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.display_name)
@@ -154,6 +194,18 @@ func (obj *RoutingInstance) UnmarshalJSON(body []byte) error {
                         err = json.Unmarshal(value, &obj.id_perms)
                         if err == nil {
                                 obj.valid |= routing_instance_id_perms
+                        }
+                        break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= routing_instance_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= routing_instance_annotations
                         }
                         break
                 case "display_name":
@@ -210,6 +262,24 @@ func (obj *RoutingInstance) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & routing_instance_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & routing_instance_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & routing_instance_display_name != 0 {

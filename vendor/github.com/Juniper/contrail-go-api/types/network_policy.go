@@ -13,7 +13,10 @@ import (
 const (
 	network_policy_network_policy_entries uint64 = 1 << iota
 	network_policy_id_perms
+	network_policy_perms2
+	network_policy_annotations
 	network_policy_display_name
+	network_policy_security_logging_object_back_refs
 	network_policy_virtual_network_back_refs
 )
 
@@ -21,7 +24,10 @@ type NetworkPolicy struct {
         contrail.ObjectBase
 	network_policy_entries PolicyEntriesType
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
+	security_logging_object_back_refs contrail.ReferenceList
 	virtual_network_back_refs contrail.ReferenceList
         valid uint64
         modified uint64
@@ -91,6 +97,24 @@ func (obj *NetworkPolicy) SetIdPerms(value *IdPermsType) {
         obj.modified |= network_policy_id_perms
 }
 
+func (obj *NetworkPolicy) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *NetworkPolicy) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= network_policy_perms2
+}
+
+func (obj *NetworkPolicy) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *NetworkPolicy) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= network_policy_annotations
+}
+
 func (obj *NetworkPolicy) GetDisplayName() string {
         return obj.display_name
 }
@@ -98,6 +122,26 @@ func (obj *NetworkPolicy) GetDisplayName() string {
 func (obj *NetworkPolicy) SetDisplayName(value string) {
         obj.display_name = value
         obj.modified |= network_policy_display_name
+}
+
+func (obj *NetworkPolicy) readSecurityLoggingObjectBackRefs() error {
+        if !obj.IsTransient() &&
+                (obj.valid & network_policy_security_logging_object_back_refs == 0) {
+                err := obj.GetField(obj, "security_logging_object_back_refs")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *NetworkPolicy) GetSecurityLoggingObjectBackRefs() (
+        contrail.ReferenceList, error) {
+        err := obj.readSecurityLoggingObjectBackRefs()
+        if err != nil {
+                return nil, err
+        }
+        return obj.security_logging_object_back_refs, nil
 }
 
 func (obj *NetworkPolicy) readVirtualNetworkBackRefs() error {
@@ -146,6 +190,24 @@ func (obj *NetworkPolicy) MarshalJSON() ([]byte, error) {
                 msg["id_perms"] = &value
         }
 
+        if obj.modified & network_policy_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & network_policy_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
+        }
+
         if obj.modified & network_policy_display_name != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.display_name)
@@ -182,12 +244,49 @@ func (obj *NetworkPolicy) UnmarshalJSON(body []byte) error {
                                 obj.valid |= network_policy_id_perms
                         }
                         break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= network_policy_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= network_policy_annotations
+                        }
+                        break
                 case "display_name":
                         err = json.Unmarshal(value, &obj.display_name)
                         if err == nil {
                                 obj.valid |= network_policy_display_name
                         }
                         break
+                case "security_logging_object_back_refs": {
+                        type ReferenceElement struct {
+                                To []string
+                                Uuid string
+                                Href string
+                                Attr SecurityLoggingObjectRuleListType
+                        }
+                        var array []ReferenceElement
+                        err = json.Unmarshal(value, &array)
+                        if err != nil {
+                            break
+                        }
+                        obj.valid |= network_policy_security_logging_object_back_refs
+                        obj.security_logging_object_back_refs = make(contrail.ReferenceList, 0)
+                        for _, element := range array {
+                                ref := contrail.Reference {
+                                        element.To,
+                                        element.Uuid,
+                                        element.Href,
+                                        element.Attr,
+                                }
+                                obj.security_logging_object_back_refs = append(obj.security_logging_object_back_refs, ref)
+                        }
+                        break
+                }
                 case "virtual_network_back_refs": {
                         type ReferenceElement struct {
                                 To []string
@@ -245,6 +344,24 @@ func (obj *NetworkPolicy) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & network_policy_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & network_policy_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & network_policy_display_name != 0 {

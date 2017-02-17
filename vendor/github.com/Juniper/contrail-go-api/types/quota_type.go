@@ -16,6 +16,7 @@ type QuotaType struct {
 	BgpRouter int `json:"bgp_router,omitempty"`
 	NetworkIpam int `json:"network_ipam,omitempty"`
 	AccessControlList int `json:"access_control_list,omitempty"`
+	NetworkPolicy int `json:"network_policy,omitempty"`
 	FloatingIpPool int `json:"floating_ip_pool,omitempty"`
 	ServiceTemplate int `json:"service_template,omitempty"`
 	ServiceInstance int `json:"service_instance,omitempty"`
@@ -28,4 +29,5 @@ type QuotaType struct {
 	LoadbalancerMember int `json:"loadbalancer_member,omitempty"`
 	LoadbalancerHealthmonitor int `json:"loadbalancer_healthmonitor,omitempty"`
 	VirtualIp int `json:"virtual_ip,omitempty"`
+	SecurityLoggingObject int `json:"security_logging_object,omitempty"`
 }

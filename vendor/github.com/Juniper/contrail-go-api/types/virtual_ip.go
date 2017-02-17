@@ -13,6 +13,8 @@ import (
 const (
 	virtual_ip_virtual_ip_properties uint64 = 1 << iota
 	virtual_ip_id_perms
+	virtual_ip_perms2
+	virtual_ip_annotations
 	virtual_ip_display_name
 	virtual_ip_loadbalancer_pool_refs
 	virtual_ip_virtual_machine_interface_refs
@@ -22,6 +24,8 @@ type VirtualIp struct {
         contrail.ObjectBase
 	virtual_ip_properties VirtualIpType
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
 	loadbalancer_pool_refs contrail.ReferenceList
 	virtual_machine_interface_refs contrail.ReferenceList
@@ -91,6 +95,24 @@ func (obj *VirtualIp) GetIdPerms() IdPermsType {
 func (obj *VirtualIp) SetIdPerms(value *IdPermsType) {
         obj.id_perms = *value
         obj.modified |= virtual_ip_id_perms
+}
+
+func (obj *VirtualIp) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *VirtualIp) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= virtual_ip_perms2
+}
+
+func (obj *VirtualIp) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *VirtualIp) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= virtual_ip_annotations
 }
 
 func (obj *VirtualIp) GetDisplayName() string {
@@ -298,6 +320,24 @@ func (obj *VirtualIp) MarshalJSON() ([]byte, error) {
                 msg["id_perms"] = &value
         }
 
+        if obj.modified & virtual_ip_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & virtual_ip_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
+        }
+
         if obj.modified & virtual_ip_display_name != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.display_name)
@@ -352,6 +392,18 @@ func (obj *VirtualIp) UnmarshalJSON(body []byte) error {
                                 obj.valid |= virtual_ip_id_perms
                         }
                         break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= virtual_ip_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= virtual_ip_annotations
+                        }
+                        break
                 case "display_name":
                         err = json.Unmarshal(value, &obj.display_name)
                         if err == nil {
@@ -402,6 +454,24 @@ func (obj *VirtualIp) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & virtual_ip_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & virtual_ip_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & virtual_ip_display_name != 0 {

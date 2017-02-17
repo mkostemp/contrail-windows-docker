@@ -15,9 +15,13 @@ const (
 	service_appliance_set_service_appliance_driver
 	service_appliance_set_service_appliance_ha_mode
 	service_appliance_set_id_perms
+	service_appliance_set_perms2
+	service_appliance_set_annotations
 	service_appliance_set_display_name
 	service_appliance_set_service_appliances
+	service_appliance_set_service_template_back_refs
 	service_appliance_set_loadbalancer_pool_back_refs
+	service_appliance_set_loadbalancer_back_refs
 )
 
 type ServiceApplianceSet struct {
@@ -26,9 +30,13 @@ type ServiceApplianceSet struct {
 	service_appliance_driver string
 	service_appliance_ha_mode string
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
 	service_appliances contrail.ReferenceList
+	service_template_back_refs contrail.ReferenceList
 	loadbalancer_pool_back_refs contrail.ReferenceList
+	loadbalancer_back_refs contrail.ReferenceList
         valid uint64
         modified uint64
         baseMap map[string]contrail.ReferenceList
@@ -115,6 +123,24 @@ func (obj *ServiceApplianceSet) SetIdPerms(value *IdPermsType) {
         obj.modified |= service_appliance_set_id_perms
 }
 
+func (obj *ServiceApplianceSet) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *ServiceApplianceSet) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= service_appliance_set_perms2
+}
+
+func (obj *ServiceApplianceSet) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *ServiceApplianceSet) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= service_appliance_set_annotations
+}
+
 func (obj *ServiceApplianceSet) GetDisplayName() string {
         return obj.display_name
 }
@@ -144,6 +170,26 @@ func (obj *ServiceApplianceSet) GetServiceAppliances() (
         return obj.service_appliances, nil
 }
 
+func (obj *ServiceApplianceSet) readServiceTemplateBackRefs() error {
+        if !obj.IsTransient() &&
+                (obj.valid & service_appliance_set_service_template_back_refs == 0) {
+                err := obj.GetField(obj, "service_template_back_refs")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *ServiceApplianceSet) GetServiceTemplateBackRefs() (
+        contrail.ReferenceList, error) {
+        err := obj.readServiceTemplateBackRefs()
+        if err != nil {
+                return nil, err
+        }
+        return obj.service_template_back_refs, nil
+}
+
 func (obj *ServiceApplianceSet) readLoadbalancerPoolBackRefs() error {
         if !obj.IsTransient() &&
                 (obj.valid & service_appliance_set_loadbalancer_pool_back_refs == 0) {
@@ -162,6 +208,26 @@ func (obj *ServiceApplianceSet) GetLoadbalancerPoolBackRefs() (
                 return nil, err
         }
         return obj.loadbalancer_pool_back_refs, nil
+}
+
+func (obj *ServiceApplianceSet) readLoadbalancerBackRefs() error {
+        if !obj.IsTransient() &&
+                (obj.valid & service_appliance_set_loadbalancer_back_refs == 0) {
+                err := obj.GetField(obj, "loadbalancer_back_refs")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *ServiceApplianceSet) GetLoadbalancerBackRefs() (
+        contrail.ReferenceList, error) {
+        err := obj.readLoadbalancerBackRefs()
+        if err != nil {
+                return nil, err
+        }
+        return obj.loadbalancer_back_refs, nil
 }
 
 func (obj *ServiceApplianceSet) MarshalJSON() ([]byte, error) {
@@ -206,6 +272,24 @@ func (obj *ServiceApplianceSet) MarshalJSON() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & service_appliance_set_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & service_appliance_set_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & service_appliance_set_display_name != 0 {
@@ -256,6 +340,18 @@ func (obj *ServiceApplianceSet) UnmarshalJSON(body []byte) error {
                                 obj.valid |= service_appliance_set_id_perms
                         }
                         break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= service_appliance_set_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= service_appliance_set_annotations
+                        }
+                        break
                 case "display_name":
                         err = json.Unmarshal(value, &obj.display_name)
                         if err == nil {
@@ -268,10 +364,22 @@ func (obj *ServiceApplianceSet) UnmarshalJSON(body []byte) error {
                                 obj.valid |= service_appliance_set_service_appliances
                         }
                         break
+                case "service_template_back_refs":
+                        err = json.Unmarshal(value, &obj.service_template_back_refs)
+                        if err == nil {
+                                obj.valid |= service_appliance_set_service_template_back_refs
+                        }
+                        break
                 case "loadbalancer_pool_back_refs":
                         err = json.Unmarshal(value, &obj.loadbalancer_pool_back_refs)
                         if err == nil {
                                 obj.valid |= service_appliance_set_loadbalancer_pool_back_refs
+                        }
+                        break
+                case "loadbalancer_back_refs":
+                        err = json.Unmarshal(value, &obj.loadbalancer_back_refs)
+                        if err == nil {
+                                obj.valid |= service_appliance_set_loadbalancer_back_refs
                         }
                         break
                 }
@@ -324,6 +432,24 @@ func (obj *ServiceApplianceSet) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & service_appliance_set_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & service_appliance_set_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & service_appliance_set_display_name != 0 {

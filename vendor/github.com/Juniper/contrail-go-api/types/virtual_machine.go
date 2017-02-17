@@ -12,6 +12,8 @@ import (
 
 const (
 	virtual_machine_id_perms uint64 = 1 << iota
+	virtual_machine_perms2
+	virtual_machine_annotations
 	virtual_machine_display_name
 	virtual_machine_virtual_machine_interfaces
 	virtual_machine_service_instance_refs
@@ -22,6 +24,8 @@ const (
 type VirtualMachine struct {
         contrail.ObjectBase
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
 	virtual_machine_interfaces contrail.ReferenceList
 	service_instance_refs contrail.ReferenceList
@@ -84,6 +88,24 @@ func (obj *VirtualMachine) GetIdPerms() IdPermsType {
 func (obj *VirtualMachine) SetIdPerms(value *IdPermsType) {
         obj.id_perms = *value
         obj.modified |= virtual_machine_id_perms
+}
+
+func (obj *VirtualMachine) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *VirtualMachine) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= virtual_machine_perms2
+}
+
+func (obj *VirtualMachine) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *VirtualMachine) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= virtual_machine_annotations
 }
 
 func (obj *VirtualMachine) GetDisplayName() string {
@@ -257,6 +279,24 @@ func (obj *VirtualMachine) MarshalJSON() ([]byte, error) {
                 msg["id_perms"] = &value
         }
 
+        if obj.modified & virtual_machine_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & virtual_machine_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
+        }
+
         if obj.modified & virtual_machine_display_name != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.display_name)
@@ -294,6 +334,18 @@ func (obj *VirtualMachine) UnmarshalJSON(body []byte) error {
                         err = json.Unmarshal(value, &obj.id_perms)
                         if err == nil {
                                 obj.valid |= virtual_machine_id_perms
+                        }
+                        break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= virtual_machine_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= virtual_machine_annotations
                         }
                         break
                 case "display_name":
@@ -349,6 +401,24 @@ func (obj *VirtualMachine) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & virtual_machine_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & virtual_machine_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & virtual_machine_display_name != 0 {

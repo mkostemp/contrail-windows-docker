@@ -11,6 +11,7 @@ type ServiceTemplateInterfaceType struct {
 }
 
 type ServiceTemplateType struct {
+	Version int `json:"version,omitempty"`
 	ServiceMode string `json:"service_mode,omitempty"`
 	ServiceType string `json:"service_type,omitempty"`
 	ImageName string `json:"image_name,omitempty"`

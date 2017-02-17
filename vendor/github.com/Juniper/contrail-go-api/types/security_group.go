@@ -15,8 +15,11 @@ const (
 	security_group_configured_security_group_id
 	security_group_security_group_entries
 	security_group_id_perms
+	security_group_perms2
+	security_group_annotations
 	security_group_display_name
 	security_group_access_control_lists
+	security_group_security_logging_object_back_refs
 	security_group_virtual_machine_interface_back_refs
 )
 
@@ -26,8 +29,11 @@ type SecurityGroup struct {
 	configured_security_group_id int
 	security_group_entries PolicyEntriesType
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
 	access_control_lists contrail.ReferenceList
+	security_logging_object_back_refs contrail.ReferenceList
 	virtual_machine_interface_back_refs contrail.ReferenceList
         valid uint64
         modified uint64
@@ -115,6 +121,24 @@ func (obj *SecurityGroup) SetIdPerms(value *IdPermsType) {
         obj.modified |= security_group_id_perms
 }
 
+func (obj *SecurityGroup) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *SecurityGroup) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= security_group_perms2
+}
+
+func (obj *SecurityGroup) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *SecurityGroup) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= security_group_annotations
+}
+
 func (obj *SecurityGroup) GetDisplayName() string {
         return obj.display_name
 }
@@ -142,6 +166,26 @@ func (obj *SecurityGroup) GetAccessControlLists() (
                 return nil, err
         }
         return obj.access_control_lists, nil
+}
+
+func (obj *SecurityGroup) readSecurityLoggingObjectBackRefs() error {
+        if !obj.IsTransient() &&
+                (obj.valid & security_group_security_logging_object_back_refs == 0) {
+                err := obj.GetField(obj, "security_logging_object_back_refs")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *SecurityGroup) GetSecurityLoggingObjectBackRefs() (
+        contrail.ReferenceList, error) {
+        err := obj.readSecurityLoggingObjectBackRefs()
+        if err != nil {
+                return nil, err
+        }
+        return obj.security_logging_object_back_refs, nil
 }
 
 func (obj *SecurityGroup) readVirtualMachineInterfaceBackRefs() error {
@@ -208,6 +252,24 @@ func (obj *SecurityGroup) MarshalJSON() ([]byte, error) {
                 msg["id_perms"] = &value
         }
 
+        if obj.modified & security_group_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & security_group_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
+        }
+
         if obj.modified & security_group_display_name != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.display_name)
@@ -256,6 +318,18 @@ func (obj *SecurityGroup) UnmarshalJSON(body []byte) error {
                                 obj.valid |= security_group_id_perms
                         }
                         break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= security_group_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= security_group_annotations
+                        }
+                        break
                 case "display_name":
                         err = json.Unmarshal(value, &obj.display_name)
                         if err == nil {
@@ -274,6 +348,31 @@ func (obj *SecurityGroup) UnmarshalJSON(body []byte) error {
                                 obj.valid |= security_group_virtual_machine_interface_back_refs
                         }
                         break
+                case "security_logging_object_back_refs": {
+                        type ReferenceElement struct {
+                                To []string
+                                Uuid string
+                                Href string
+                                Attr SecurityLoggingObjectRuleListType
+                        }
+                        var array []ReferenceElement
+                        err = json.Unmarshal(value, &array)
+                        if err != nil {
+                            break
+                        }
+                        obj.valid |= security_group_security_logging_object_back_refs
+                        obj.security_logging_object_back_refs = make(contrail.ReferenceList, 0)
+                        for _, element := range array {
+                                ref := contrail.Reference {
+                                        element.To,
+                                        element.Uuid,
+                                        element.Href,
+                                        element.Attr,
+                                }
+                                obj.security_logging_object_back_refs = append(obj.security_logging_object_back_refs, ref)
+                        }
+                        break
+                }
                 }
                 if err != nil {
                         return err
@@ -324,6 +423,24 @@ func (obj *SecurityGroup) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & security_group_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & security_group_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & security_group_display_name != 0 {

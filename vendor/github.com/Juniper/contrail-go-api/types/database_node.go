@@ -13,6 +13,8 @@ import (
 const (
 	database_node_database_node_ip_address uint64 = 1 << iota
 	database_node_id_perms
+	database_node_perms2
+	database_node_annotations
 	database_node_display_name
 )
 
@@ -20,6 +22,8 @@ type DatabaseNode struct {
         contrail.ObjectBase
 	database_node_ip_address string
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
         valid uint64
         modified uint64
@@ -89,6 +93,24 @@ func (obj *DatabaseNode) SetIdPerms(value *IdPermsType) {
         obj.modified |= database_node_id_perms
 }
 
+func (obj *DatabaseNode) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *DatabaseNode) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= database_node_perms2
+}
+
+func (obj *DatabaseNode) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *DatabaseNode) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= database_node_annotations
+}
+
 func (obj *DatabaseNode) GetDisplayName() string {
         return obj.display_name
 }
@@ -122,6 +144,24 @@ func (obj *DatabaseNode) MarshalJSON() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & database_node_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & database_node_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & database_node_display_name != 0 {
@@ -158,6 +198,18 @@ func (obj *DatabaseNode) UnmarshalJSON(body []byte) error {
                         err = json.Unmarshal(value, &obj.id_perms)
                         if err == nil {
                                 obj.valid |= database_node_id_perms
+                        }
+                        break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= database_node_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= database_node_annotations
                         }
                         break
                 case "display_name":
@@ -198,6 +250,24 @@ func (obj *DatabaseNode) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & database_node_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & database_node_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & database_node_display_name != 0 {

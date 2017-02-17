@@ -13,6 +13,8 @@ import (
 const (
 	config_node_config_node_ip_address uint64 = 1 << iota
 	config_node_id_perms
+	config_node_perms2
+	config_node_annotations
 	config_node_display_name
 )
 
@@ -20,6 +22,8 @@ type ConfigNode struct {
         contrail.ObjectBase
 	config_node_ip_address string
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
         valid uint64
         modified uint64
@@ -89,6 +93,24 @@ func (obj *ConfigNode) SetIdPerms(value *IdPermsType) {
         obj.modified |= config_node_id_perms
 }
 
+func (obj *ConfigNode) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *ConfigNode) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= config_node_perms2
+}
+
+func (obj *ConfigNode) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *ConfigNode) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= config_node_annotations
+}
+
 func (obj *ConfigNode) GetDisplayName() string {
         return obj.display_name
 }
@@ -122,6 +144,24 @@ func (obj *ConfigNode) MarshalJSON() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & config_node_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & config_node_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & config_node_display_name != 0 {
@@ -158,6 +198,18 @@ func (obj *ConfigNode) UnmarshalJSON(body []byte) error {
                         err = json.Unmarshal(value, &obj.id_perms)
                         if err == nil {
                                 obj.valid |= config_node_id_perms
+                        }
+                        break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= config_node_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= config_node_annotations
                         }
                         break
                 case "display_name":
@@ -198,6 +250,24 @@ func (obj *ConfigNode) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & config_node_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & config_node_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & config_node_display_name != 0 {

@@ -12,6 +12,7 @@ type ActionListType struct {
 	AssignRoutingInstance string `json:"assign_routing_instance,omitempty"`
 	Log bool `json:"log,omitempty"`
 	Alert bool `json:"alert,omitempty"`
+	QosAction string `json:"qos_action,omitempty"`
 }
 
 func (obj *ActionListType) AddApplyService(value string) {

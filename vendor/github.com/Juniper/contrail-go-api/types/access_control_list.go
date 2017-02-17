@@ -12,14 +12,20 @@ import (
 
 const (
 	access_control_list_access_control_list_entries uint64 = 1 << iota
+	access_control_list_access_control_list_hash
 	access_control_list_id_perms
+	access_control_list_perms2
+	access_control_list_annotations
 	access_control_list_display_name
 )
 
 type AccessControlList struct {
         contrail.ObjectBase
 	access_control_list_entries AclEntriesType
+	access_control_list_hash uint64
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
         valid uint64
         modified uint64
@@ -80,6 +86,15 @@ func (obj *AccessControlList) SetAccessControlListEntries(value *AclEntriesType)
         obj.modified |= access_control_list_access_control_list_entries
 }
 
+func (obj *AccessControlList) GetAccessControlListHash() uint64 {
+        return obj.access_control_list_hash
+}
+
+func (obj *AccessControlList) SetAccessControlListHash(value uint64) {
+        obj.access_control_list_hash = value
+        obj.modified |= access_control_list_access_control_list_hash
+}
+
 func (obj *AccessControlList) GetIdPerms() IdPermsType {
         return obj.id_perms
 }
@@ -87,6 +102,24 @@ func (obj *AccessControlList) GetIdPerms() IdPermsType {
 func (obj *AccessControlList) SetIdPerms(value *IdPermsType) {
         obj.id_perms = *value
         obj.modified |= access_control_list_id_perms
+}
+
+func (obj *AccessControlList) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *AccessControlList) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= access_control_list_perms2
+}
+
+func (obj *AccessControlList) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *AccessControlList) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= access_control_list_annotations
 }
 
 func (obj *AccessControlList) GetDisplayName() string {
@@ -115,6 +148,15 @@ func (obj *AccessControlList) MarshalJSON() ([]byte, error) {
                 msg["access_control_list_entries"] = &value
         }
 
+        if obj.modified & access_control_list_access_control_list_hash != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.access_control_list_hash)
+                if err != nil {
+                        return nil, err
+                }
+                msg["access_control_list_hash"] = &value
+        }
+
         if obj.modified & access_control_list_id_perms != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.id_perms)
@@ -122,6 +164,24 @@ func (obj *AccessControlList) MarshalJSON() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & access_control_list_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & access_control_list_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & access_control_list_display_name != 0 {
@@ -154,10 +214,28 @@ func (obj *AccessControlList) UnmarshalJSON(body []byte) error {
                                 obj.valid |= access_control_list_access_control_list_entries
                         }
                         break
+                case "access_control_list_hash":
+                        err = json.Unmarshal(value, &obj.access_control_list_hash)
+                        if err == nil {
+                                obj.valid |= access_control_list_access_control_list_hash
+                        }
+                        break
                 case "id_perms":
                         err = json.Unmarshal(value, &obj.id_perms)
                         if err == nil {
                                 obj.valid |= access_control_list_id_perms
+                        }
+                        break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= access_control_list_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= access_control_list_annotations
                         }
                         break
                 case "display_name":
@@ -191,6 +269,15 @@ func (obj *AccessControlList) UpdateObject() ([]byte, error) {
                 msg["access_control_list_entries"] = &value
         }
 
+        if obj.modified & access_control_list_access_control_list_hash != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.access_control_list_hash)
+                if err != nil {
+                        return nil, err
+                }
+                msg["access_control_list_hash"] = &value
+        }
+
         if obj.modified & access_control_list_id_perms != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.id_perms)
@@ -198,6 +285,24 @@ func (obj *AccessControlList) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & access_control_list_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & access_control_list_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & access_control_list_display_name != 0 {

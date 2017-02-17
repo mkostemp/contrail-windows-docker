@@ -12,19 +12,21 @@ import (
 
 const (
 	bgp_router_id_perms uint64 = 1 << iota
+	bgp_router_perms2
+	bgp_router_annotations
 	bgp_router_display_name
 	bgp_router_global_system_config_back_refs
 	bgp_router_physical_router_back_refs
-	bgp_router_virtual_router_back_refs
 )
 
 type BgpRouter struct {
         contrail.ObjectBase
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
 	global_system_config_back_refs contrail.ReferenceList
 	physical_router_back_refs contrail.ReferenceList
-	virtual_router_back_refs contrail.ReferenceList
         valid uint64
         modified uint64
         baseMap map[string]contrail.ReferenceList
@@ -84,6 +86,24 @@ func (obj *BgpRouter) SetIdPerms(value *IdPermsType) {
         obj.modified |= bgp_router_id_perms
 }
 
+func (obj *BgpRouter) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *BgpRouter) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= bgp_router_perms2
+}
+
+func (obj *BgpRouter) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *BgpRouter) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= bgp_router_annotations
+}
+
 func (obj *BgpRouter) GetDisplayName() string {
         return obj.display_name
 }
@@ -133,26 +153,6 @@ func (obj *BgpRouter) GetPhysicalRouterBackRefs() (
         return obj.physical_router_back_refs, nil
 }
 
-func (obj *BgpRouter) readVirtualRouterBackRefs() error {
-        if !obj.IsTransient() &&
-                (obj.valid & bgp_router_virtual_router_back_refs == 0) {
-                err := obj.GetField(obj, "virtual_router_back_refs")
-                if err != nil {
-                        return err
-                }
-        }
-        return nil
-}
-
-func (obj *BgpRouter) GetVirtualRouterBackRefs() (
-        contrail.ReferenceList, error) {
-        err := obj.readVirtualRouterBackRefs()
-        if err != nil {
-                return nil, err
-        }
-        return obj.virtual_router_back_refs, nil
-}
-
 func (obj *BgpRouter) MarshalJSON() ([]byte, error) {
         msg := map[string]*json.RawMessage {
         }
@@ -168,6 +168,24 @@ func (obj *BgpRouter) MarshalJSON() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & bgp_router_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & bgp_router_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & bgp_router_display_name != 0 {
@@ -200,6 +218,18 @@ func (obj *BgpRouter) UnmarshalJSON(body []byte) error {
                                 obj.valid |= bgp_router_id_perms
                         }
                         break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= bgp_router_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= bgp_router_annotations
+                        }
+                        break
                 case "display_name":
                         err = json.Unmarshal(value, &obj.display_name)
                         if err == nil {
@@ -216,12 +246,6 @@ func (obj *BgpRouter) UnmarshalJSON(body []byte) error {
                         err = json.Unmarshal(value, &obj.physical_router_back_refs)
                         if err == nil {
                                 obj.valid |= bgp_router_physical_router_back_refs
-                        }
-                        break
-                case "virtual_router_back_refs":
-                        err = json.Unmarshal(value, &obj.virtual_router_back_refs)
-                        if err == nil {
-                                obj.valid |= bgp_router_virtual_router_back_refs
                         }
                         break
                 }
@@ -247,6 +271,24 @@ func (obj *BgpRouter) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & bgp_router_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & bgp_router_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & bgp_router_display_name != 0 {

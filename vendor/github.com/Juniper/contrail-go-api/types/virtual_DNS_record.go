@@ -13,6 +13,8 @@ import (
 const (
 	virtual_DNS_record_virtual_DNS_record_data uint64 = 1 << iota
 	virtual_DNS_record_id_perms
+	virtual_DNS_record_perms2
+	virtual_DNS_record_annotations
 	virtual_DNS_record_display_name
 )
 
@@ -20,6 +22,8 @@ type VirtualDnsRecord struct {
         contrail.ObjectBase
 	virtual_DNS_record_data VirtualDnsRecordType
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
         valid uint64
         modified uint64
@@ -89,6 +93,24 @@ func (obj *VirtualDnsRecord) SetIdPerms(value *IdPermsType) {
         obj.modified |= virtual_DNS_record_id_perms
 }
 
+func (obj *VirtualDnsRecord) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *VirtualDnsRecord) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= virtual_DNS_record_perms2
+}
+
+func (obj *VirtualDnsRecord) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *VirtualDnsRecord) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= virtual_DNS_record_annotations
+}
+
 func (obj *VirtualDnsRecord) GetDisplayName() string {
         return obj.display_name
 }
@@ -122,6 +144,24 @@ func (obj *VirtualDnsRecord) MarshalJSON() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & virtual_DNS_record_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & virtual_DNS_record_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & virtual_DNS_record_display_name != 0 {
@@ -158,6 +198,18 @@ func (obj *VirtualDnsRecord) UnmarshalJSON(body []byte) error {
                         err = json.Unmarshal(value, &obj.id_perms)
                         if err == nil {
                                 obj.valid |= virtual_DNS_record_id_perms
+                        }
+                        break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= virtual_DNS_record_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= virtual_DNS_record_annotations
                         }
                         break
                 case "display_name":
@@ -198,6 +250,24 @@ func (obj *VirtualDnsRecord) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & virtual_DNS_record_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & virtual_DNS_record_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & virtual_DNS_record_display_name != 0 {

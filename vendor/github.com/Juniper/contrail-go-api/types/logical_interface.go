@@ -14,6 +14,8 @@ const (
 	logical_interface_logical_interface_vlan_tag uint64 = 1 << iota
 	logical_interface_logical_interface_type
 	logical_interface_id_perms
+	logical_interface_perms2
+	logical_interface_annotations
 	logical_interface_display_name
 	logical_interface_virtual_machine_interface_refs
 )
@@ -23,6 +25,8 @@ type LogicalInterface struct {
 	logical_interface_vlan_tag int
 	logical_interface_type string
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
 	virtual_machine_interface_refs contrail.ReferenceList
         valid uint64
@@ -100,6 +104,24 @@ func (obj *LogicalInterface) GetIdPerms() IdPermsType {
 func (obj *LogicalInterface) SetIdPerms(value *IdPermsType) {
         obj.id_perms = *value
         obj.modified |= logical_interface_id_perms
+}
+
+func (obj *LogicalInterface) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *LogicalInterface) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= logical_interface_perms2
+}
+
+func (obj *LogicalInterface) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *LogicalInterface) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= logical_interface_annotations
 }
 
 func (obj *LogicalInterface) GetDisplayName() string {
@@ -231,6 +253,24 @@ func (obj *LogicalInterface) MarshalJSON() ([]byte, error) {
                 msg["id_perms"] = &value
         }
 
+        if obj.modified & logical_interface_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & logical_interface_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
+        }
+
         if obj.modified & logical_interface_display_name != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.display_name)
@@ -280,6 +320,18 @@ func (obj *LogicalInterface) UnmarshalJSON(body []byte) error {
                         err = json.Unmarshal(value, &obj.id_perms)
                         if err == nil {
                                 obj.valid |= logical_interface_id_perms
+                        }
+                        break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= logical_interface_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= logical_interface_annotations
                         }
                         break
                 case "display_name":
@@ -335,6 +387,24 @@ func (obj *LogicalInterface) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & logical_interface_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & logical_interface_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & logical_interface_display_name != 0 {
