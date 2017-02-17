@@ -577,7 +577,7 @@ var _ = Describe("On requests from docker daemon", func() {
 
 		Context("queried endpoint doesn't exist", func() {
 			BeforeEach(func() {
-				deleteHNSEndpoint(contrailDriver)
+				deleteTheOnlyHNSEndpoint(contrailDriver)
 			})
 			It("responds with err", func() {
 				_, err := contrailDriver.EndpointInfo(req)
@@ -621,7 +621,7 @@ var _ = Describe("On requests from docker daemon", func() {
 
 		Context("queried endpoint doesn't exist", func() {
 			BeforeEach(func() {
-				deleteHNSEndpoint(contrailDriver)
+				deleteTheOnlyHNSEndpoint(contrailDriver)
 			})
 			It("responds with err", func() {
 				_, err := contrailDriver.Join(req)
@@ -655,7 +655,7 @@ var _ = Describe("On requests from docker daemon", func() {
 
 		Context("queried endpoint doesn't exist", func() {
 			BeforeEach(func() {
-				deleteHNSEndpoint(contrailDriver)
+				deleteTheOnlyHNSEndpoint(contrailDriver)
 			})
 			It("responds with err", func() {
 				err := contrailDriver.Leave(req)
@@ -807,13 +807,9 @@ func createContrailNetwork(c *controller.Controller) *types.VirtualNetwork {
 		c.ApiClient, networkName, subnetCIDR, project)
 }
 
-func deleteHNSEndpoint(d *ContrailDriver) {
-	hnsNets, err := d.hnsMgr.ListNetworks()
-	Expect(err).ToNot(HaveOccurred())
-	eps, err := hns.ListHNSEndpointsOfNetwork(hnsNets[0].Id)
-	Expect(err).ToNot(HaveOccurred())
-	hnsEndpointID := eps[0].Id
-	err = hns.DeleteHNSEndpoint(hnsEndpointID)
+func deleteTheOnlyHNSEndpoint(d *ContrailDriver) {
+	_, hnsEndpointID := getTheOnlyHNSEndpoint(d)
+	err := hns.DeleteHNSEndpoint(hnsEndpointID)
 	Expect(err).ToNot(HaveOccurred())
 }
 
@@ -824,6 +820,7 @@ func getTheOnlyHNSEndpoint(d *ContrailDriver) (*hcsshim.HNSEndpoint, string) {
 	Expect(err).ToNot(HaveOccurred())
 	hnsEndpointID := eps[0].Id
 	hnsEndpoint, err := hns.GetHNSEndpoint(hnsEndpointID)
+	Expect(err).ToNot(HaveOccurred())
 	Expect(hnsEndpoint).ToNot(BeNil())
 	return hnsEndpoint, hnsEndpointID
 }
