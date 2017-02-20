@@ -8,6 +8,7 @@ type ServiceInstanceInterfaceType struct {
 	VirtualNetwork string `json:"virtual_network,omitempty"`
 	IpAddress string `json:"ip_address,omitempty"`
 	StaticRoutes *RouteTableType `json:"static_routes,omitempty"`
+	AllowedAddressPairs *AllowedAddressPairs `json:"allowed_address_pairs,omitempty"`
 }
 
 type ServiceScaleOutType struct {

@@ -12,7 +12,11 @@ import (
 
 const (
 	network_ipam_network_ipam_mgmt uint64 = 1 << iota
+	network_ipam_ipam_subnets
+	network_ipam_ipam_subnet_method
 	network_ipam_id_perms
+	network_ipam_perms2
+	network_ipam_annotations
 	network_ipam_display_name
 	network_ipam_virtual_DNS_refs
 	network_ipam_virtual_network_back_refs
@@ -21,7 +25,11 @@ const (
 type NetworkIpam struct {
         contrail.ObjectBase
 	network_ipam_mgmt IpamType
+	ipam_subnets IpamSubnets
+	ipam_subnet_method string
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
 	virtual_DNS_refs contrail.ReferenceList
 	virtual_network_back_refs contrail.ReferenceList
@@ -84,6 +92,24 @@ func (obj *NetworkIpam) SetNetworkIpamMgmt(value *IpamType) {
         obj.modified |= network_ipam_network_ipam_mgmt
 }
 
+func (obj *NetworkIpam) GetIpamSubnets() IpamSubnets {
+        return obj.ipam_subnets
+}
+
+func (obj *NetworkIpam) SetIpamSubnets(value *IpamSubnets) {
+        obj.ipam_subnets = *value
+        obj.modified |= network_ipam_ipam_subnets
+}
+
+func (obj *NetworkIpam) GetIpamSubnetMethod() string {
+        return obj.ipam_subnet_method
+}
+
+func (obj *NetworkIpam) SetIpamSubnetMethod(value string) {
+        obj.ipam_subnet_method = value
+        obj.modified |= network_ipam_ipam_subnet_method
+}
+
 func (obj *NetworkIpam) GetIdPerms() IdPermsType {
         return obj.id_perms
 }
@@ -91,6 +117,24 @@ func (obj *NetworkIpam) GetIdPerms() IdPermsType {
 func (obj *NetworkIpam) SetIdPerms(value *IdPermsType) {
         obj.id_perms = *value
         obj.modified |= network_ipam_id_perms
+}
+
+func (obj *NetworkIpam) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *NetworkIpam) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= network_ipam_perms2
+}
+
+func (obj *NetworkIpam) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *NetworkIpam) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= network_ipam_annotations
 }
 
 func (obj *NetworkIpam) GetDisplayName() string {
@@ -224,6 +268,24 @@ func (obj *NetworkIpam) MarshalJSON() ([]byte, error) {
                 msg["network_ipam_mgmt"] = &value
         }
 
+        if obj.modified & network_ipam_ipam_subnets != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.ipam_subnets)
+                if err != nil {
+                        return nil, err
+                }
+                msg["ipam_subnets"] = &value
+        }
+
+        if obj.modified & network_ipam_ipam_subnet_method != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.ipam_subnet_method)
+                if err != nil {
+                        return nil, err
+                }
+                msg["ipam_subnet_method"] = &value
+        }
+
         if obj.modified & network_ipam_id_perms != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.id_perms)
@@ -231,6 +293,24 @@ func (obj *NetworkIpam) MarshalJSON() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & network_ipam_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & network_ipam_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & network_ipam_display_name != 0 {
@@ -272,10 +352,34 @@ func (obj *NetworkIpam) UnmarshalJSON(body []byte) error {
                                 obj.valid |= network_ipam_network_ipam_mgmt
                         }
                         break
+                case "ipam_subnets":
+                        err = json.Unmarshal(value, &obj.ipam_subnets)
+                        if err == nil {
+                                obj.valid |= network_ipam_ipam_subnets
+                        }
+                        break
+                case "ipam_subnet_method":
+                        err = json.Unmarshal(value, &obj.ipam_subnet_method)
+                        if err == nil {
+                                obj.valid |= network_ipam_ipam_subnet_method
+                        }
+                        break
                 case "id_perms":
                         err = json.Unmarshal(value, &obj.id_perms)
                         if err == nil {
                                 obj.valid |= network_ipam_id_perms
+                        }
+                        break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= network_ipam_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= network_ipam_annotations
                         }
                         break
                 case "display_name":
@@ -340,6 +444,24 @@ func (obj *NetworkIpam) UpdateObject() ([]byte, error) {
                 msg["network_ipam_mgmt"] = &value
         }
 
+        if obj.modified & network_ipam_ipam_subnets != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.ipam_subnets)
+                if err != nil {
+                        return nil, err
+                }
+                msg["ipam_subnets"] = &value
+        }
+
+        if obj.modified & network_ipam_ipam_subnet_method != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.ipam_subnet_method)
+                if err != nil {
+                        return nil, err
+                }
+                msg["ipam_subnet_method"] = &value
+        }
+
         if obj.modified & network_ipam_id_perms != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.id_perms)
@@ -347,6 +469,24 @@ func (obj *NetworkIpam) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & network_ipam_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & network_ipam_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & network_ipam_display_name != 0 {

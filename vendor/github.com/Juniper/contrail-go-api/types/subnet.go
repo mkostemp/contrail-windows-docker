@@ -13,6 +13,8 @@ import (
 const (
 	subnet_subnet_ip_prefix uint64 = 1 << iota
 	subnet_id_perms
+	subnet_perms2
+	subnet_annotations
 	subnet_display_name
 	subnet_virtual_machine_interface_refs
 )
@@ -21,6 +23,8 @@ type Subnet struct {
         contrail.ObjectBase
 	subnet_ip_prefix SubnetType
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
 	virtual_machine_interface_refs contrail.ReferenceList
         valid uint64
@@ -89,6 +93,24 @@ func (obj *Subnet) GetIdPerms() IdPermsType {
 func (obj *Subnet) SetIdPerms(value *IdPermsType) {
         obj.id_perms = *value
         obj.modified |= subnet_id_perms
+}
+
+func (obj *Subnet) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *Subnet) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= subnet_perms2
+}
+
+func (obj *Subnet) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *Subnet) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= subnet_annotations
 }
 
 func (obj *Subnet) GetDisplayName() string {
@@ -211,6 +233,24 @@ func (obj *Subnet) MarshalJSON() ([]byte, error) {
                 msg["id_perms"] = &value
         }
 
+        if obj.modified & subnet_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & subnet_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
+        }
+
         if obj.modified & subnet_display_name != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.display_name)
@@ -254,6 +294,18 @@ func (obj *Subnet) UnmarshalJSON(body []byte) error {
                         err = json.Unmarshal(value, &obj.id_perms)
                         if err == nil {
                                 obj.valid |= subnet_id_perms
+                        }
+                        break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= subnet_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= subnet_annotations
                         }
                         break
                 case "display_name":
@@ -300,6 +352,24 @@ func (obj *Subnet) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & subnet_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & subnet_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & subnet_display_name != 0 {

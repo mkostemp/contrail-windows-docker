@@ -8,6 +8,7 @@ type AclRuleType struct {
 	MatchCondition *MatchConditionType `json:"match_condition,omitempty"`
 	ActionList *ActionListType `json:"action_list,omitempty"`
 	RuleUuid string `json:"rule_uuid,omitempty"`
+	Direction string `json:"direction,omitempty"`
 }
 
 type AclEntriesType struct {

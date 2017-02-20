@@ -4,6 +4,14 @@
 
 package types
 
+type PermType struct {
+	Owner string `json:"owner,omitempty"`
+	OwnerAccess int `json:"owner_access,omitempty"`
+	Group string `json:"group,omitempty"`
+	GroupAccess int `json:"group_access,omitempty"`
+	OtherAccess int `json:"other_access,omitempty"`
+}
+
 type UuidType struct {
 	UuidMslong uint64 `json:"uuid_mslong,omitempty"`
 	UuidLslong uint64 `json:"uuid_lslong,omitempty"`

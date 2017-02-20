@@ -11,4 +11,6 @@ type LoadbalancerPoolType struct {
 	Protocol string `json:"protocol,omitempty"`
 	LoadbalancerMethod string `json:"loadbalancer_method,omitempty"`
 	SubnetId string `json:"subnet_id,omitempty"`
+	SessionPersistence string `json:"session_persistence,omitempty"`
+	PersistenceCookieName string `json:"persistence_cookie_name,omitempty"`
 }

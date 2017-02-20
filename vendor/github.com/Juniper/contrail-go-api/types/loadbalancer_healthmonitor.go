@@ -13,6 +13,8 @@ import (
 const (
 	loadbalancer_healthmonitor_loadbalancer_healthmonitor_properties uint64 = 1 << iota
 	loadbalancer_healthmonitor_id_perms
+	loadbalancer_healthmonitor_perms2
+	loadbalancer_healthmonitor_annotations
 	loadbalancer_healthmonitor_display_name
 	loadbalancer_healthmonitor_loadbalancer_pool_back_refs
 )
@@ -21,6 +23,8 @@ type LoadbalancerHealthmonitor struct {
         contrail.ObjectBase
 	loadbalancer_healthmonitor_properties LoadbalancerHealthmonitorType
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
 	loadbalancer_pool_back_refs contrail.ReferenceList
         valid uint64
@@ -91,6 +95,24 @@ func (obj *LoadbalancerHealthmonitor) SetIdPerms(value *IdPermsType) {
         obj.modified |= loadbalancer_healthmonitor_id_perms
 }
 
+func (obj *LoadbalancerHealthmonitor) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *LoadbalancerHealthmonitor) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= loadbalancer_healthmonitor_perms2
+}
+
+func (obj *LoadbalancerHealthmonitor) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *LoadbalancerHealthmonitor) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= loadbalancer_healthmonitor_annotations
+}
+
 func (obj *LoadbalancerHealthmonitor) GetDisplayName() string {
         return obj.display_name
 }
@@ -146,6 +168,24 @@ func (obj *LoadbalancerHealthmonitor) MarshalJSON() ([]byte, error) {
                 msg["id_perms"] = &value
         }
 
+        if obj.modified & loadbalancer_healthmonitor_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & loadbalancer_healthmonitor_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
+        }
+
         if obj.modified & loadbalancer_healthmonitor_display_name != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.display_name)
@@ -180,6 +220,18 @@ func (obj *LoadbalancerHealthmonitor) UnmarshalJSON(body []byte) error {
                         err = json.Unmarshal(value, &obj.id_perms)
                         if err == nil {
                                 obj.valid |= loadbalancer_healthmonitor_id_perms
+                        }
+                        break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= loadbalancer_healthmonitor_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= loadbalancer_healthmonitor_annotations
                         }
                         break
                 case "display_name":
@@ -226,6 +278,24 @@ func (obj *LoadbalancerHealthmonitor) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & loadbalancer_healthmonitor_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & loadbalancer_healthmonitor_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & loadbalancer_healthmonitor_display_name != 0 {

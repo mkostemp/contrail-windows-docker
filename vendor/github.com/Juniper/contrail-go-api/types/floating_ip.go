@@ -15,7 +15,12 @@ const (
 	floating_ip_floating_ip_is_virtual_ip
 	floating_ip_floating_ip_fixed_ip_address
 	floating_ip_floating_ip_address_family
+	floating_ip_floating_ip_port_mappings_enable
+	floating_ip_floating_ip_port_mappings
+	floating_ip_floating_ip_traffic_direction
 	floating_ip_id_perms
+	floating_ip_perms2
+	floating_ip_annotations
 	floating_ip_display_name
 	floating_ip_project_refs
 	floating_ip_virtual_machine_interface_refs
@@ -28,7 +33,12 @@ type FloatingIp struct {
 	floating_ip_is_virtual_ip bool
 	floating_ip_fixed_ip_address string
 	floating_ip_address_family string
+	floating_ip_port_mappings_enable bool
+	floating_ip_port_mappings PortMappings
+	floating_ip_traffic_direction string
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
 	project_refs contrail.ReferenceList
 	virtual_machine_interface_refs contrail.ReferenceList
@@ -119,6 +129,33 @@ func (obj *FloatingIp) SetFloatingIpAddressFamily(value string) {
         obj.modified |= floating_ip_floating_ip_address_family
 }
 
+func (obj *FloatingIp) GetFloatingIpPortMappingsEnable() bool {
+        return obj.floating_ip_port_mappings_enable
+}
+
+func (obj *FloatingIp) SetFloatingIpPortMappingsEnable(value bool) {
+        obj.floating_ip_port_mappings_enable = value
+        obj.modified |= floating_ip_floating_ip_port_mappings_enable
+}
+
+func (obj *FloatingIp) GetFloatingIpPortMappings() PortMappings {
+        return obj.floating_ip_port_mappings
+}
+
+func (obj *FloatingIp) SetFloatingIpPortMappings(value *PortMappings) {
+        obj.floating_ip_port_mappings = *value
+        obj.modified |= floating_ip_floating_ip_port_mappings
+}
+
+func (obj *FloatingIp) GetFloatingIpTrafficDirection() string {
+        return obj.floating_ip_traffic_direction
+}
+
+func (obj *FloatingIp) SetFloatingIpTrafficDirection(value string) {
+        obj.floating_ip_traffic_direction = value
+        obj.modified |= floating_ip_floating_ip_traffic_direction
+}
+
 func (obj *FloatingIp) GetIdPerms() IdPermsType {
         return obj.id_perms
 }
@@ -126,6 +163,24 @@ func (obj *FloatingIp) GetIdPerms() IdPermsType {
 func (obj *FloatingIp) SetIdPerms(value *IdPermsType) {
         obj.id_perms = *value
         obj.modified |= floating_ip_id_perms
+}
+
+func (obj *FloatingIp) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *FloatingIp) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= floating_ip_perms2
+}
+
+func (obj *FloatingIp) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *FloatingIp) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= floating_ip_annotations
 }
 
 func (obj *FloatingIp) GetDisplayName() string {
@@ -371,6 +426,33 @@ func (obj *FloatingIp) MarshalJSON() ([]byte, error) {
                 msg["floating_ip_address_family"] = &value
         }
 
+        if obj.modified & floating_ip_floating_ip_port_mappings_enable != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.floating_ip_port_mappings_enable)
+                if err != nil {
+                        return nil, err
+                }
+                msg["floating_ip_port_mappings_enable"] = &value
+        }
+
+        if obj.modified & floating_ip_floating_ip_port_mappings != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.floating_ip_port_mappings)
+                if err != nil {
+                        return nil, err
+                }
+                msg["floating_ip_port_mappings"] = &value
+        }
+
+        if obj.modified & floating_ip_floating_ip_traffic_direction != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.floating_ip_traffic_direction)
+                if err != nil {
+                        return nil, err
+                }
+                msg["floating_ip_traffic_direction"] = &value
+        }
+
         if obj.modified & floating_ip_id_perms != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.id_perms)
@@ -378,6 +460,24 @@ func (obj *FloatingIp) MarshalJSON() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & floating_ip_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & floating_ip_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & floating_ip_display_name != 0 {
@@ -446,10 +546,40 @@ func (obj *FloatingIp) UnmarshalJSON(body []byte) error {
                                 obj.valid |= floating_ip_floating_ip_address_family
                         }
                         break
+                case "floating_ip_port_mappings_enable":
+                        err = json.Unmarshal(value, &obj.floating_ip_port_mappings_enable)
+                        if err == nil {
+                                obj.valid |= floating_ip_floating_ip_port_mappings_enable
+                        }
+                        break
+                case "floating_ip_port_mappings":
+                        err = json.Unmarshal(value, &obj.floating_ip_port_mappings)
+                        if err == nil {
+                                obj.valid |= floating_ip_floating_ip_port_mappings
+                        }
+                        break
+                case "floating_ip_traffic_direction":
+                        err = json.Unmarshal(value, &obj.floating_ip_traffic_direction)
+                        if err == nil {
+                                obj.valid |= floating_ip_floating_ip_traffic_direction
+                        }
+                        break
                 case "id_perms":
                         err = json.Unmarshal(value, &obj.id_perms)
                         if err == nil {
                                 obj.valid |= floating_ip_id_perms
+                        }
+                        break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= floating_ip_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= floating_ip_annotations
                         }
                         break
                 case "display_name":
@@ -528,6 +658,33 @@ func (obj *FloatingIp) UpdateObject() ([]byte, error) {
                 msg["floating_ip_address_family"] = &value
         }
 
+        if obj.modified & floating_ip_floating_ip_port_mappings_enable != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.floating_ip_port_mappings_enable)
+                if err != nil {
+                        return nil, err
+                }
+                msg["floating_ip_port_mappings_enable"] = &value
+        }
+
+        if obj.modified & floating_ip_floating_ip_port_mappings != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.floating_ip_port_mappings)
+                if err != nil {
+                        return nil, err
+                }
+                msg["floating_ip_port_mappings"] = &value
+        }
+
+        if obj.modified & floating_ip_floating_ip_traffic_direction != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.floating_ip_traffic_direction)
+                if err != nil {
+                        return nil, err
+                }
+                msg["floating_ip_traffic_direction"] = &value
+        }
+
         if obj.modified & floating_ip_id_perms != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.id_perms)
@@ -535,6 +692,24 @@ func (obj *FloatingIp) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & floating_ip_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & floating_ip_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & floating_ip_display_name != 0 {

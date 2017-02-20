@@ -15,9 +15,12 @@ const (
 	loadbalancer_pool_loadbalancer_pool_provider
 	loadbalancer_pool_loadbalancer_pool_custom_attributes
 	loadbalancer_pool_id_perms
+	loadbalancer_pool_perms2
+	loadbalancer_pool_annotations
 	loadbalancer_pool_display_name
 	loadbalancer_pool_service_instance_refs
 	loadbalancer_pool_virtual_machine_interface_refs
+	loadbalancer_pool_loadbalancer_listener_refs
 	loadbalancer_pool_service_appliance_set_refs
 	loadbalancer_pool_loadbalancer_members
 	loadbalancer_pool_loadbalancer_healthmonitor_refs
@@ -30,9 +33,12 @@ type LoadbalancerPool struct {
 	loadbalancer_pool_provider string
 	loadbalancer_pool_custom_attributes KeyValuePairs
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
 	service_instance_refs contrail.ReferenceList
 	virtual_machine_interface_refs contrail.ReferenceList
+	loadbalancer_listener_refs contrail.ReferenceList
 	service_appliance_set_refs contrail.ReferenceList
 	loadbalancer_members contrail.ReferenceList
 	loadbalancer_healthmonitor_refs contrail.ReferenceList
@@ -121,6 +127,24 @@ func (obj *LoadbalancerPool) GetIdPerms() IdPermsType {
 func (obj *LoadbalancerPool) SetIdPerms(value *IdPermsType) {
         obj.id_perms = *value
         obj.modified |= loadbalancer_pool_id_perms
+}
+
+func (obj *LoadbalancerPool) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *LoadbalancerPool) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= loadbalancer_pool_perms2
+}
+
+func (obj *LoadbalancerPool) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *LoadbalancerPool) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= loadbalancer_pool_annotations
 }
 
 func (obj *LoadbalancerPool) GetDisplayName() string {
@@ -313,6 +337,91 @@ func (obj *LoadbalancerPool) SetVirtualMachineInterfaceList(
         obj.virtual_machine_interface_refs = make([]contrail.Reference, len(refList))
         for i, pair := range refList {
                 obj.virtual_machine_interface_refs[i] = contrail.Reference {
+                        pair.Object.GetFQName(),
+                        pair.Object.GetUuid(),
+                        pair.Object.GetHref(),
+                        pair.Attribute,
+                }
+        }
+}
+
+
+func (obj *LoadbalancerPool) readLoadbalancerListenerRefs() error {
+        if !obj.IsTransient() &&
+                (obj.valid & loadbalancer_pool_loadbalancer_listener_refs == 0) {
+                err := obj.GetField(obj, "loadbalancer_listener_refs")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *LoadbalancerPool) GetLoadbalancerListenerRefs() (
+        contrail.ReferenceList, error) {
+        err := obj.readLoadbalancerListenerRefs()
+        if err != nil {
+                return nil, err
+        }
+        return obj.loadbalancer_listener_refs, nil
+}
+
+func (obj *LoadbalancerPool) AddLoadbalancerListener(
+        rhs *LoadbalancerListener) error {
+        err := obj.readLoadbalancerListenerRefs()
+        if err != nil {
+                return err
+        }
+
+        if obj.modified & loadbalancer_pool_loadbalancer_listener_refs == 0 {
+                obj.storeReferenceBase("loadbalancer-listener", obj.loadbalancer_listener_refs)
+        }
+
+        ref := contrail.Reference {
+                rhs.GetFQName(), rhs.GetUuid(), rhs.GetHref(), nil}
+        obj.loadbalancer_listener_refs = append(obj.loadbalancer_listener_refs, ref)
+        obj.modified |= loadbalancer_pool_loadbalancer_listener_refs
+        return nil
+}
+
+func (obj *LoadbalancerPool) DeleteLoadbalancerListener(uuid string) error {
+        err := obj.readLoadbalancerListenerRefs()
+        if err != nil {
+                return err
+        }
+
+        if obj.modified & loadbalancer_pool_loadbalancer_listener_refs == 0 {
+                obj.storeReferenceBase("loadbalancer-listener", obj.loadbalancer_listener_refs)
+        }
+
+        for i, ref := range obj.loadbalancer_listener_refs {
+                if ref.Uuid == uuid {
+                        obj.loadbalancer_listener_refs = append(
+                                obj.loadbalancer_listener_refs[:i],
+                                obj.loadbalancer_listener_refs[i+1:]...)
+                        break
+                }
+        }
+        obj.modified |= loadbalancer_pool_loadbalancer_listener_refs
+        return nil
+}
+
+func (obj *LoadbalancerPool) ClearLoadbalancerListener() {
+        if (obj.valid & loadbalancer_pool_loadbalancer_listener_refs != 0) &&
+           (obj.modified & loadbalancer_pool_loadbalancer_listener_refs == 0) {
+                obj.storeReferenceBase("loadbalancer-listener", obj.loadbalancer_listener_refs)
+        }
+        obj.loadbalancer_listener_refs = make([]contrail.Reference, 0)
+        obj.valid |= loadbalancer_pool_loadbalancer_listener_refs
+        obj.modified |= loadbalancer_pool_loadbalancer_listener_refs
+}
+
+func (obj *LoadbalancerPool) SetLoadbalancerListenerList(
+        refList []contrail.ReferencePair) {
+        obj.ClearLoadbalancerListener()
+        obj.loadbalancer_listener_refs = make([]contrail.Reference, len(refList))
+        for i, pair := range refList {
+                obj.loadbalancer_listener_refs[i] = contrail.Reference {
                         pair.Object.GetFQName(),
                         pair.Object.GetUuid(),
                         pair.Object.GetHref(),
@@ -556,6 +665,24 @@ func (obj *LoadbalancerPool) MarshalJSON() ([]byte, error) {
                 msg["id_perms"] = &value
         }
 
+        if obj.modified & loadbalancer_pool_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & loadbalancer_pool_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
+        }
+
         if obj.modified & loadbalancer_pool_display_name != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.display_name)
@@ -581,6 +708,15 @@ func (obj *LoadbalancerPool) MarshalJSON() ([]byte, error) {
                         return nil, err
                 }
                 msg["virtual_machine_interface_refs"] = &value
+        }
+
+        if len(obj.loadbalancer_listener_refs) > 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.loadbalancer_listener_refs)
+                if err != nil {
+                        return nil, err
+                }
+                msg["loadbalancer_listener_refs"] = &value
         }
 
         if len(obj.service_appliance_set_refs) > 0 {
@@ -640,6 +776,18 @@ func (obj *LoadbalancerPool) UnmarshalJSON(body []byte) error {
                                 obj.valid |= loadbalancer_pool_id_perms
                         }
                         break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= loadbalancer_pool_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= loadbalancer_pool_annotations
+                        }
+                        break
                 case "display_name":
                         err = json.Unmarshal(value, &obj.display_name)
                         if err == nil {
@@ -656,6 +804,12 @@ func (obj *LoadbalancerPool) UnmarshalJSON(body []byte) error {
                         err = json.Unmarshal(value, &obj.virtual_machine_interface_refs)
                         if err == nil {
                                 obj.valid |= loadbalancer_pool_virtual_machine_interface_refs
+                        }
+                        break
+                case "loadbalancer_listener_refs":
+                        err = json.Unmarshal(value, &obj.loadbalancer_listener_refs)
+                        if err == nil {
+                                obj.valid |= loadbalancer_pool_loadbalancer_listener_refs
                         }
                         break
                 case "service_appliance_set_refs":
@@ -734,6 +888,24 @@ func (obj *LoadbalancerPool) UpdateObject() ([]byte, error) {
                 msg["id_perms"] = &value
         }
 
+        if obj.modified & loadbalancer_pool_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & loadbalancer_pool_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
+        }
+
         if obj.modified & loadbalancer_pool_display_name != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.display_name)
@@ -779,6 +951,26 @@ func (obj *LoadbalancerPool) UpdateObject() ([]byte, error) {
                                 return nil, err
                         }
                         msg["virtual_machine_interface_refs"] = &value
+                }
+        }
+
+
+        if obj.modified & loadbalancer_pool_loadbalancer_listener_refs != 0 {
+                if len(obj.loadbalancer_listener_refs) == 0 {
+                        var value json.RawMessage
+                        value, err := json.Marshal(
+                                          make([]contrail.Reference, 0))
+                        if err != nil {
+                                return nil, err
+                        }
+                        msg["loadbalancer_listener_refs"] = &value
+                } else if !obj.hasReferenceBase("loadbalancer-listener") {
+                        var value json.RawMessage
+                        value, err := json.Marshal(&obj.loadbalancer_listener_refs)
+                        if err != nil {
+                                return nil, err
+                        }
+                        msg["loadbalancer_listener_refs"] = &value
                 }
         }
 
@@ -847,6 +1039,18 @@ func (obj *LoadbalancerPool) UpdateReferences() error {
                         obj, "virtual-machine-interface",
                         obj.virtual_machine_interface_refs,
                         obj.baseMap["virtual-machine-interface"])
+                if err != nil {
+                        return err
+                }
+        }
+
+        if (obj.modified & loadbalancer_pool_loadbalancer_listener_refs != 0) &&
+           len(obj.loadbalancer_listener_refs) > 0 &&
+           obj.hasReferenceBase("loadbalancer-listener") {
+                err := obj.UpdateReference(
+                        obj, "loadbalancer-listener",
+                        obj.loadbalancer_listener_refs,
+                        obj.baseMap["loadbalancer-listener"])
                 if err != nil {
                         return err
                 }

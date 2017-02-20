@@ -12,10 +12,12 @@ import (
 
 const (
 	virtual_router_virtual_router_type uint64 = 1 << iota
+	virtual_router_virtual_router_dpdk_enabled
 	virtual_router_virtual_router_ip_address
 	virtual_router_id_perms
+	virtual_router_perms2
+	virtual_router_annotations
 	virtual_router_display_name
-	virtual_router_bgp_router_refs
 	virtual_router_virtual_machine_refs
 	virtual_router_physical_router_back_refs
 	virtual_router_provider_attachment_back_refs
@@ -24,10 +26,12 @@ const (
 type VirtualRouter struct {
         contrail.ObjectBase
 	virtual_router_type string
+	virtual_router_dpdk_enabled bool
 	virtual_router_ip_address string
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
-	bgp_router_refs contrail.ReferenceList
 	virtual_machine_refs contrail.ReferenceList
 	physical_router_back_refs contrail.ReferenceList
 	provider_attachment_back_refs contrail.ReferenceList
@@ -90,6 +94,15 @@ func (obj *VirtualRouter) SetVirtualRouterType(value string) {
         obj.modified |= virtual_router_virtual_router_type
 }
 
+func (obj *VirtualRouter) GetVirtualRouterDpdkEnabled() bool {
+        return obj.virtual_router_dpdk_enabled
+}
+
+func (obj *VirtualRouter) SetVirtualRouterDpdkEnabled(value bool) {
+        obj.virtual_router_dpdk_enabled = value
+        obj.modified |= virtual_router_virtual_router_dpdk_enabled
+}
+
 func (obj *VirtualRouter) GetVirtualRouterIpAddress() string {
         return obj.virtual_router_ip_address
 }
@@ -108,6 +121,24 @@ func (obj *VirtualRouter) SetIdPerms(value *IdPermsType) {
         obj.modified |= virtual_router_id_perms
 }
 
+func (obj *VirtualRouter) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *VirtualRouter) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= virtual_router_perms2
+}
+
+func (obj *VirtualRouter) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *VirtualRouter) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= virtual_router_annotations
+}
+
 func (obj *VirtualRouter) GetDisplayName() string {
         return obj.display_name
 }
@@ -116,91 +147,6 @@ func (obj *VirtualRouter) SetDisplayName(value string) {
         obj.display_name = value
         obj.modified |= virtual_router_display_name
 }
-
-func (obj *VirtualRouter) readBgpRouterRefs() error {
-        if !obj.IsTransient() &&
-                (obj.valid & virtual_router_bgp_router_refs == 0) {
-                err := obj.GetField(obj, "bgp_router_refs")
-                if err != nil {
-                        return err
-                }
-        }
-        return nil
-}
-
-func (obj *VirtualRouter) GetBgpRouterRefs() (
-        contrail.ReferenceList, error) {
-        err := obj.readBgpRouterRefs()
-        if err != nil {
-                return nil, err
-        }
-        return obj.bgp_router_refs, nil
-}
-
-func (obj *VirtualRouter) AddBgpRouter(
-        rhs *BgpRouter) error {
-        err := obj.readBgpRouterRefs()
-        if err != nil {
-                return err
-        }
-
-        if obj.modified & virtual_router_bgp_router_refs == 0 {
-                obj.storeReferenceBase("bgp-router", obj.bgp_router_refs)
-        }
-
-        ref := contrail.Reference {
-                rhs.GetFQName(), rhs.GetUuid(), rhs.GetHref(), nil}
-        obj.bgp_router_refs = append(obj.bgp_router_refs, ref)
-        obj.modified |= virtual_router_bgp_router_refs
-        return nil
-}
-
-func (obj *VirtualRouter) DeleteBgpRouter(uuid string) error {
-        err := obj.readBgpRouterRefs()
-        if err != nil {
-                return err
-        }
-
-        if obj.modified & virtual_router_bgp_router_refs == 0 {
-                obj.storeReferenceBase("bgp-router", obj.bgp_router_refs)
-        }
-
-        for i, ref := range obj.bgp_router_refs {
-                if ref.Uuid == uuid {
-                        obj.bgp_router_refs = append(
-                                obj.bgp_router_refs[:i],
-                                obj.bgp_router_refs[i+1:]...)
-                        break
-                }
-        }
-        obj.modified |= virtual_router_bgp_router_refs
-        return nil
-}
-
-func (obj *VirtualRouter) ClearBgpRouter() {
-        if (obj.valid & virtual_router_bgp_router_refs != 0) &&
-           (obj.modified & virtual_router_bgp_router_refs == 0) {
-                obj.storeReferenceBase("bgp-router", obj.bgp_router_refs)
-        }
-        obj.bgp_router_refs = make([]contrail.Reference, 0)
-        obj.valid |= virtual_router_bgp_router_refs
-        obj.modified |= virtual_router_bgp_router_refs
-}
-
-func (obj *VirtualRouter) SetBgpRouterList(
-        refList []contrail.ReferencePair) {
-        obj.ClearBgpRouter()
-        obj.bgp_router_refs = make([]contrail.Reference, len(refList))
-        for i, pair := range refList {
-                obj.bgp_router_refs[i] = contrail.Reference {
-                        pair.Object.GetFQName(),
-                        pair.Object.GetUuid(),
-                        pair.Object.GetHref(),
-                        pair.Attribute,
-                }
-        }
-}
-
 
 func (obj *VirtualRouter) readVirtualMachineRefs() error {
         if !obj.IsTransient() &&
@@ -344,6 +290,15 @@ func (obj *VirtualRouter) MarshalJSON() ([]byte, error) {
                 msg["virtual_router_type"] = &value
         }
 
+        if obj.modified & virtual_router_virtual_router_dpdk_enabled != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.virtual_router_dpdk_enabled)
+                if err != nil {
+                        return nil, err
+                }
+                msg["virtual_router_dpdk_enabled"] = &value
+        }
+
         if obj.modified & virtual_router_virtual_router_ip_address != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.virtual_router_ip_address)
@@ -362,6 +317,24 @@ func (obj *VirtualRouter) MarshalJSON() ([]byte, error) {
                 msg["id_perms"] = &value
         }
 
+        if obj.modified & virtual_router_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & virtual_router_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
+        }
+
         if obj.modified & virtual_router_display_name != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.display_name)
@@ -369,15 +342,6 @@ func (obj *VirtualRouter) MarshalJSON() ([]byte, error) {
                         return nil, err
                 }
                 msg["display_name"] = &value
-        }
-
-        if len(obj.bgp_router_refs) > 0 {
-                var value json.RawMessage
-                value, err := json.Marshal(&obj.bgp_router_refs)
-                if err != nil {
-                        return nil, err
-                }
-                msg["bgp_router_refs"] = &value
         }
 
         if len(obj.virtual_machine_refs) > 0 {
@@ -410,6 +374,12 @@ func (obj *VirtualRouter) UnmarshalJSON(body []byte) error {
                                 obj.valid |= virtual_router_virtual_router_type
                         }
                         break
+                case "virtual_router_dpdk_enabled":
+                        err = json.Unmarshal(value, &obj.virtual_router_dpdk_enabled)
+                        if err == nil {
+                                obj.valid |= virtual_router_virtual_router_dpdk_enabled
+                        }
+                        break
                 case "virtual_router_ip_address":
                         err = json.Unmarshal(value, &obj.virtual_router_ip_address)
                         if err == nil {
@@ -422,16 +392,22 @@ func (obj *VirtualRouter) UnmarshalJSON(body []byte) error {
                                 obj.valid |= virtual_router_id_perms
                         }
                         break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= virtual_router_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= virtual_router_annotations
+                        }
+                        break
                 case "display_name":
                         err = json.Unmarshal(value, &obj.display_name)
                         if err == nil {
                                 obj.valid |= virtual_router_display_name
-                        }
-                        break
-                case "bgp_router_refs":
-                        err = json.Unmarshal(value, &obj.bgp_router_refs)
-                        if err == nil {
-                                obj.valid |= virtual_router_bgp_router_refs
                         }
                         break
                 case "virtual_machine_refs":
@@ -477,6 +453,15 @@ func (obj *VirtualRouter) UpdateObject() ([]byte, error) {
                 msg["virtual_router_type"] = &value
         }
 
+        if obj.modified & virtual_router_virtual_router_dpdk_enabled != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.virtual_router_dpdk_enabled)
+                if err != nil {
+                        return nil, err
+                }
+                msg["virtual_router_dpdk_enabled"] = &value
+        }
+
         if obj.modified & virtual_router_virtual_router_ip_address != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.virtual_router_ip_address)
@@ -495,6 +480,24 @@ func (obj *VirtualRouter) UpdateObject() ([]byte, error) {
                 msg["id_perms"] = &value
         }
 
+        if obj.modified & virtual_router_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & virtual_router_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
+        }
+
         if obj.modified & virtual_router_display_name != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.display_name)
@@ -503,26 +506,6 @@ func (obj *VirtualRouter) UpdateObject() ([]byte, error) {
                 }
                 msg["display_name"] = &value
         }
-
-        if obj.modified & virtual_router_bgp_router_refs != 0 {
-                if len(obj.bgp_router_refs) == 0 {
-                        var value json.RawMessage
-                        value, err := json.Marshal(
-                                          make([]contrail.Reference, 0))
-                        if err != nil {
-                                return nil, err
-                        }
-                        msg["bgp_router_refs"] = &value
-                } else if !obj.hasReferenceBase("bgp-router") {
-                        var value json.RawMessage
-                        value, err := json.Marshal(&obj.bgp_router_refs)
-                        if err != nil {
-                                return nil, err
-                        }
-                        msg["bgp_router_refs"] = &value
-                }
-        }
-
 
         if obj.modified & virtual_router_virtual_machine_refs != 0 {
                 if len(obj.virtual_machine_refs) == 0 {
@@ -548,18 +531,6 @@ func (obj *VirtualRouter) UpdateObject() ([]byte, error) {
 }
 
 func (obj *VirtualRouter) UpdateReferences() error {
-
-        if (obj.modified & virtual_router_bgp_router_refs != 0) &&
-           len(obj.bgp_router_refs) > 0 &&
-           obj.hasReferenceBase("bgp-router") {
-                err := obj.UpdateReference(
-                        obj, "bgp-router",
-                        obj.bgp_router_refs,
-                        obj.baseMap["bgp-router"])
-                if err != nil {
-                        return err
-                }
-        }
 
         if (obj.modified & virtual_router_virtual_machine_refs != 0) &&
            len(obj.virtual_machine_refs) > 0 &&

@@ -13,6 +13,8 @@ import (
 const (
 	namespace_namespace_cidr uint64 = 1 << iota
 	namespace_id_perms
+	namespace_perms2
+	namespace_annotations
 	namespace_display_name
 	namespace_project_back_refs
 )
@@ -21,6 +23,8 @@ type Namespace struct {
         contrail.ObjectBase
 	namespace_cidr SubnetType
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
 	project_back_refs contrail.ReferenceList
         valid uint64
@@ -91,6 +95,24 @@ func (obj *Namespace) SetIdPerms(value *IdPermsType) {
         obj.modified |= namespace_id_perms
 }
 
+func (obj *Namespace) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *Namespace) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= namespace_perms2
+}
+
+func (obj *Namespace) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *Namespace) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= namespace_annotations
+}
+
 func (obj *Namespace) GetDisplayName() string {
         return obj.display_name
 }
@@ -146,6 +168,24 @@ func (obj *Namespace) MarshalJSON() ([]byte, error) {
                 msg["id_perms"] = &value
         }
 
+        if obj.modified & namespace_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & namespace_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
+        }
+
         if obj.modified & namespace_display_name != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.display_name)
@@ -180,6 +220,18 @@ func (obj *Namespace) UnmarshalJSON(body []byte) error {
                         err = json.Unmarshal(value, &obj.id_perms)
                         if err == nil {
                                 obj.valid |= namespace_id_perms
+                        }
+                        break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= namespace_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= namespace_annotations
                         }
                         break
                 case "display_name":
@@ -245,6 +297,24 @@ func (obj *Namespace) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & namespace_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & namespace_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & namespace_display_name != 0 {

@@ -11,8 +11,10 @@ import (
 )
 
 const (
-	floating_ip_pool_floating_ip_pool_prefixes uint64 = 1 << iota
+	floating_ip_pool_floating_ip_pool_subnets uint64 = 1 << iota
 	floating_ip_pool_id_perms
+	floating_ip_pool_perms2
+	floating_ip_pool_annotations
 	floating_ip_pool_display_name
 	floating_ip_pool_floating_ips
 	floating_ip_pool_project_back_refs
@@ -20,8 +22,10 @@ const (
 
 type FloatingIpPool struct {
         contrail.ObjectBase
-	floating_ip_pool_prefixes FloatingIpPoolType
+	floating_ip_pool_subnets FloatingIpPoolSubnetType
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
 	floating_ips contrail.ReferenceList
 	project_back_refs contrail.ReferenceList
@@ -75,13 +79,13 @@ func (obj *FloatingIpPool) UpdateDone() {
 }
 
 
-func (obj *FloatingIpPool) GetFloatingIpPoolPrefixes() FloatingIpPoolType {
-        return obj.floating_ip_pool_prefixes
+func (obj *FloatingIpPool) GetFloatingIpPoolSubnets() FloatingIpPoolSubnetType {
+        return obj.floating_ip_pool_subnets
 }
 
-func (obj *FloatingIpPool) SetFloatingIpPoolPrefixes(value *FloatingIpPoolType) {
-        obj.floating_ip_pool_prefixes = *value
-        obj.modified |= floating_ip_pool_floating_ip_pool_prefixes
+func (obj *FloatingIpPool) SetFloatingIpPoolSubnets(value *FloatingIpPoolSubnetType) {
+        obj.floating_ip_pool_subnets = *value
+        obj.modified |= floating_ip_pool_floating_ip_pool_subnets
 }
 
 func (obj *FloatingIpPool) GetIdPerms() IdPermsType {
@@ -91,6 +95,24 @@ func (obj *FloatingIpPool) GetIdPerms() IdPermsType {
 func (obj *FloatingIpPool) SetIdPerms(value *IdPermsType) {
         obj.id_perms = *value
         obj.modified |= floating_ip_pool_id_perms
+}
+
+func (obj *FloatingIpPool) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *FloatingIpPool) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= floating_ip_pool_perms2
+}
+
+func (obj *FloatingIpPool) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *FloatingIpPool) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= floating_ip_pool_annotations
 }
 
 func (obj *FloatingIpPool) GetDisplayName() string {
@@ -150,13 +172,13 @@ func (obj *FloatingIpPool) MarshalJSON() ([]byte, error) {
                 return nil, err
         }
 
-        if obj.modified & floating_ip_pool_floating_ip_pool_prefixes != 0 {
+        if obj.modified & floating_ip_pool_floating_ip_pool_subnets != 0 {
                 var value json.RawMessage
-                value, err := json.Marshal(&obj.floating_ip_pool_prefixes)
+                value, err := json.Marshal(&obj.floating_ip_pool_subnets)
                 if err != nil {
                         return nil, err
                 }
-                msg["floating_ip_pool_prefixes"] = &value
+                msg["floating_ip_pool_subnets"] = &value
         }
 
         if obj.modified & floating_ip_pool_id_perms != 0 {
@@ -166,6 +188,24 @@ func (obj *FloatingIpPool) MarshalJSON() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & floating_ip_pool_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & floating_ip_pool_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & floating_ip_pool_display_name != 0 {
@@ -192,16 +232,28 @@ func (obj *FloatingIpPool) UnmarshalJSON(body []byte) error {
         }
         for key, value := range m {
                 switch key {
-                case "floating_ip_pool_prefixes":
-                        err = json.Unmarshal(value, &obj.floating_ip_pool_prefixes)
+                case "floating_ip_pool_subnets":
+                        err = json.Unmarshal(value, &obj.floating_ip_pool_subnets)
                         if err == nil {
-                                obj.valid |= floating_ip_pool_floating_ip_pool_prefixes
+                                obj.valid |= floating_ip_pool_floating_ip_pool_subnets
                         }
                         break
                 case "id_perms":
                         err = json.Unmarshal(value, &obj.id_perms)
                         if err == nil {
                                 obj.valid |= floating_ip_pool_id_perms
+                        }
+                        break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= floating_ip_pool_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= floating_ip_pool_annotations
                         }
                         break
                 case "display_name":
@@ -238,13 +290,13 @@ func (obj *FloatingIpPool) UpdateObject() ([]byte, error) {
                 return nil, err
         }
 
-        if obj.modified & floating_ip_pool_floating_ip_pool_prefixes != 0 {
+        if obj.modified & floating_ip_pool_floating_ip_pool_subnets != 0 {
                 var value json.RawMessage
-                value, err := json.Marshal(&obj.floating_ip_pool_prefixes)
+                value, err := json.Marshal(&obj.floating_ip_pool_subnets)
                 if err != nil {
                         return nil, err
                 }
-                msg["floating_ip_pool_prefixes"] = &value
+                msg["floating_ip_pool_subnets"] = &value
         }
 
         if obj.modified & floating_ip_pool_id_perms != 0 {
@@ -254,6 +306,24 @@ func (obj *FloatingIpPool) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & floating_ip_pool_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & floating_ip_pool_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & floating_ip_pool_display_name != 0 {

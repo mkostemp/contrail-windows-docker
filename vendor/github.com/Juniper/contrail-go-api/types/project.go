@@ -12,49 +12,77 @@ import (
 
 const (
 	project_quota uint64 = 1 << iota
+	project_alarm_enable
 	project_id_perms
+	project_perms2
+	project_annotations
 	project_display_name
+	project_security_logging_objects
 	project_namespace_refs
 	project_security_groups
 	project_virtual_networks
-	project_qos_queues
-	project_qos_forwarding_classs
+	project_qos_configs
 	project_network_ipams
 	project_network_policys
 	project_virtual_machine_interfaces
 	project_floating_ip_pool_refs
+	project_alias_ip_pool_refs
+	project_bgp_as_a_services
+	project_routing_policys
+	project_route_aggregates
 	project_service_instances
+	project_service_health_checks
 	project_route_tables
 	project_interface_route_tables
 	project_logical_routers
+	project_api_access_lists
 	project_loadbalancer_pools
 	project_loadbalancer_healthmonitors
 	project_virtual_ips
+	project_loadbalancer_listeners
+	project_loadbalancers
+	project_bgpvpns
+	project_alarms
 	project_floating_ip_back_refs
+	project_alias_ip_back_refs
 )
 
 type Project struct {
         contrail.ObjectBase
 	quota QuotaType
+	alarm_enable bool
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
+	security_logging_objects contrail.ReferenceList
 	namespace_refs contrail.ReferenceList
 	security_groups contrail.ReferenceList
 	virtual_networks contrail.ReferenceList
-	qos_queues contrail.ReferenceList
-	qos_forwarding_classs contrail.ReferenceList
+	qos_configs contrail.ReferenceList
 	network_ipams contrail.ReferenceList
 	network_policys contrail.ReferenceList
 	virtual_machine_interfaces contrail.ReferenceList
 	floating_ip_pool_refs contrail.ReferenceList
+	alias_ip_pool_refs contrail.ReferenceList
+	bgp_as_a_services contrail.ReferenceList
+	routing_policys contrail.ReferenceList
+	route_aggregates contrail.ReferenceList
 	service_instances contrail.ReferenceList
+	service_health_checks contrail.ReferenceList
 	route_tables contrail.ReferenceList
 	interface_route_tables contrail.ReferenceList
 	logical_routers contrail.ReferenceList
+	api_access_lists contrail.ReferenceList
 	loadbalancer_pools contrail.ReferenceList
 	loadbalancer_healthmonitors contrail.ReferenceList
 	virtual_ips contrail.ReferenceList
+	loadbalancer_listeners contrail.ReferenceList
+	loadbalancers contrail.ReferenceList
+	bgpvpns contrail.ReferenceList
+	alarms contrail.ReferenceList
 	floating_ip_back_refs contrail.ReferenceList
+	alias_ip_back_refs contrail.ReferenceList
         valid uint64
         modified uint64
         baseMap map[string]contrail.ReferenceList
@@ -114,6 +142,15 @@ func (obj *Project) SetQuota(value *QuotaType) {
         obj.modified |= project_quota
 }
 
+func (obj *Project) GetAlarmEnable() bool {
+        return obj.alarm_enable
+}
+
+func (obj *Project) SetAlarmEnable(value bool) {
+        obj.alarm_enable = value
+        obj.modified |= project_alarm_enable
+}
+
 func (obj *Project) GetIdPerms() IdPermsType {
         return obj.id_perms
 }
@@ -123,6 +160,24 @@ func (obj *Project) SetIdPerms(value *IdPermsType) {
         obj.modified |= project_id_perms
 }
 
+func (obj *Project) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *Project) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= project_perms2
+}
+
+func (obj *Project) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *Project) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= project_annotations
+}
+
 func (obj *Project) GetDisplayName() string {
         return obj.display_name
 }
@@ -130,6 +185,26 @@ func (obj *Project) GetDisplayName() string {
 func (obj *Project) SetDisplayName(value string) {
         obj.display_name = value
         obj.modified |= project_display_name
+}
+
+func (obj *Project) readSecurityLoggingObjects() error {
+        if !obj.IsTransient() &&
+                (obj.valid & project_security_logging_objects == 0) {
+                err := obj.GetField(obj, "security_logging_objects")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *Project) GetSecurityLoggingObjects() (
+        contrail.ReferenceList, error) {
+        err := obj.readSecurityLoggingObjects()
+        if err != nil {
+                return nil, err
+        }
+        return obj.security_logging_objects, nil
 }
 
 func (obj *Project) readSecurityGroups() error {
@@ -172,10 +247,10 @@ func (obj *Project) GetVirtualNetworks() (
         return obj.virtual_networks, nil
 }
 
-func (obj *Project) readQosQueues() error {
+func (obj *Project) readQosConfigs() error {
         if !obj.IsTransient() &&
-                (obj.valid & project_qos_queues == 0) {
-                err := obj.GetField(obj, "qos_queues")
+                (obj.valid & project_qos_configs == 0) {
+                err := obj.GetField(obj, "qos_configs")
                 if err != nil {
                         return err
                 }
@@ -183,33 +258,13 @@ func (obj *Project) readQosQueues() error {
         return nil
 }
 
-func (obj *Project) GetQosQueues() (
+func (obj *Project) GetQosConfigs() (
         contrail.ReferenceList, error) {
-        err := obj.readQosQueues()
+        err := obj.readQosConfigs()
         if err != nil {
                 return nil, err
         }
-        return obj.qos_queues, nil
-}
-
-func (obj *Project) readQosForwardingClasss() error {
-        if !obj.IsTransient() &&
-                (obj.valid & project_qos_forwarding_classs == 0) {
-                err := obj.GetField(obj, "qos_forwarding_classs")
-                if err != nil {
-                        return err
-                }
-        }
-        return nil
-}
-
-func (obj *Project) GetQosForwardingClasss() (
-        contrail.ReferenceList, error) {
-        err := obj.readQosForwardingClasss()
-        if err != nil {
-                return nil, err
-        }
-        return obj.qos_forwarding_classs, nil
+        return obj.qos_configs, nil
 }
 
 func (obj *Project) readNetworkIpams() error {
@@ -272,6 +327,66 @@ func (obj *Project) GetVirtualMachineInterfaces() (
         return obj.virtual_machine_interfaces, nil
 }
 
+func (obj *Project) readBgpAsAServices() error {
+        if !obj.IsTransient() &&
+                (obj.valid & project_bgp_as_a_services == 0) {
+                err := obj.GetField(obj, "bgp_as_a_services")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *Project) GetBgpAsAServices() (
+        contrail.ReferenceList, error) {
+        err := obj.readBgpAsAServices()
+        if err != nil {
+                return nil, err
+        }
+        return obj.bgp_as_a_services, nil
+}
+
+func (obj *Project) readRoutingPolicys() error {
+        if !obj.IsTransient() &&
+                (obj.valid & project_routing_policys == 0) {
+                err := obj.GetField(obj, "routing_policys")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *Project) GetRoutingPolicys() (
+        contrail.ReferenceList, error) {
+        err := obj.readRoutingPolicys()
+        if err != nil {
+                return nil, err
+        }
+        return obj.routing_policys, nil
+}
+
+func (obj *Project) readRouteAggregates() error {
+        if !obj.IsTransient() &&
+                (obj.valid & project_route_aggregates == 0) {
+                err := obj.GetField(obj, "route_aggregates")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *Project) GetRouteAggregates() (
+        contrail.ReferenceList, error) {
+        err := obj.readRouteAggregates()
+        if err != nil {
+                return nil, err
+        }
+        return obj.route_aggregates, nil
+}
+
 func (obj *Project) readServiceInstances() error {
         if !obj.IsTransient() &&
                 (obj.valid & project_service_instances == 0) {
@@ -290,6 +405,26 @@ func (obj *Project) GetServiceInstances() (
                 return nil, err
         }
         return obj.service_instances, nil
+}
+
+func (obj *Project) readServiceHealthChecks() error {
+        if !obj.IsTransient() &&
+                (obj.valid & project_service_health_checks == 0) {
+                err := obj.GetField(obj, "service_health_checks")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *Project) GetServiceHealthChecks() (
+        contrail.ReferenceList, error) {
+        err := obj.readServiceHealthChecks()
+        if err != nil {
+                return nil, err
+        }
+        return obj.service_health_checks, nil
 }
 
 func (obj *Project) readRouteTables() error {
@@ -352,6 +487,26 @@ func (obj *Project) GetLogicalRouters() (
         return obj.logical_routers, nil
 }
 
+func (obj *Project) readApiAccessLists() error {
+        if !obj.IsTransient() &&
+                (obj.valid & project_api_access_lists == 0) {
+                err := obj.GetField(obj, "api_access_lists")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *Project) GetApiAccessLists() (
+        contrail.ReferenceList, error) {
+        err := obj.readApiAccessLists()
+        if err != nil {
+                return nil, err
+        }
+        return obj.api_access_lists, nil
+}
+
 func (obj *Project) readLoadbalancerPools() error {
         if !obj.IsTransient() &&
                 (obj.valid & project_loadbalancer_pools == 0) {
@@ -410,6 +565,86 @@ func (obj *Project) GetVirtualIps() (
                 return nil, err
         }
         return obj.virtual_ips, nil
+}
+
+func (obj *Project) readLoadbalancerListeners() error {
+        if !obj.IsTransient() &&
+                (obj.valid & project_loadbalancer_listeners == 0) {
+                err := obj.GetField(obj, "loadbalancer_listeners")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *Project) GetLoadbalancerListeners() (
+        contrail.ReferenceList, error) {
+        err := obj.readLoadbalancerListeners()
+        if err != nil {
+                return nil, err
+        }
+        return obj.loadbalancer_listeners, nil
+}
+
+func (obj *Project) readLoadbalancers() error {
+        if !obj.IsTransient() &&
+                (obj.valid & project_loadbalancers == 0) {
+                err := obj.GetField(obj, "loadbalancers")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *Project) GetLoadbalancers() (
+        contrail.ReferenceList, error) {
+        err := obj.readLoadbalancers()
+        if err != nil {
+                return nil, err
+        }
+        return obj.loadbalancers, nil
+}
+
+func (obj *Project) readBgpvpns() error {
+        if !obj.IsTransient() &&
+                (obj.valid & project_bgpvpns == 0) {
+                err := obj.GetField(obj, "bgpvpns")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *Project) GetBgpvpns() (
+        contrail.ReferenceList, error) {
+        err := obj.readBgpvpns()
+        if err != nil {
+                return nil, err
+        }
+        return obj.bgpvpns, nil
+}
+
+func (obj *Project) readAlarms() error {
+        if !obj.IsTransient() &&
+                (obj.valid & project_alarms == 0) {
+                err := obj.GetField(obj, "alarms")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *Project) GetAlarms() (
+        contrail.ReferenceList, error) {
+        err := obj.readAlarms()
+        if err != nil {
+                return nil, err
+        }
+        return obj.alarms, nil
 }
 
 func (obj *Project) readNamespaceRefs() error {
@@ -582,6 +817,91 @@ func (obj *Project) SetFloatingIpPoolList(
 }
 
 
+func (obj *Project) readAliasIpPoolRefs() error {
+        if !obj.IsTransient() &&
+                (obj.valid & project_alias_ip_pool_refs == 0) {
+                err := obj.GetField(obj, "alias_ip_pool_refs")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *Project) GetAliasIpPoolRefs() (
+        contrail.ReferenceList, error) {
+        err := obj.readAliasIpPoolRefs()
+        if err != nil {
+                return nil, err
+        }
+        return obj.alias_ip_pool_refs, nil
+}
+
+func (obj *Project) AddAliasIpPool(
+        rhs *AliasIpPool) error {
+        err := obj.readAliasIpPoolRefs()
+        if err != nil {
+                return err
+        }
+
+        if obj.modified & project_alias_ip_pool_refs == 0 {
+                obj.storeReferenceBase("alias-ip-pool", obj.alias_ip_pool_refs)
+        }
+
+        ref := contrail.Reference {
+                rhs.GetFQName(), rhs.GetUuid(), rhs.GetHref(), nil}
+        obj.alias_ip_pool_refs = append(obj.alias_ip_pool_refs, ref)
+        obj.modified |= project_alias_ip_pool_refs
+        return nil
+}
+
+func (obj *Project) DeleteAliasIpPool(uuid string) error {
+        err := obj.readAliasIpPoolRefs()
+        if err != nil {
+                return err
+        }
+
+        if obj.modified & project_alias_ip_pool_refs == 0 {
+                obj.storeReferenceBase("alias-ip-pool", obj.alias_ip_pool_refs)
+        }
+
+        for i, ref := range obj.alias_ip_pool_refs {
+                if ref.Uuid == uuid {
+                        obj.alias_ip_pool_refs = append(
+                                obj.alias_ip_pool_refs[:i],
+                                obj.alias_ip_pool_refs[i+1:]...)
+                        break
+                }
+        }
+        obj.modified |= project_alias_ip_pool_refs
+        return nil
+}
+
+func (obj *Project) ClearAliasIpPool() {
+        if (obj.valid & project_alias_ip_pool_refs != 0) &&
+           (obj.modified & project_alias_ip_pool_refs == 0) {
+                obj.storeReferenceBase("alias-ip-pool", obj.alias_ip_pool_refs)
+        }
+        obj.alias_ip_pool_refs = make([]contrail.Reference, 0)
+        obj.valid |= project_alias_ip_pool_refs
+        obj.modified |= project_alias_ip_pool_refs
+}
+
+func (obj *Project) SetAliasIpPoolList(
+        refList []contrail.ReferencePair) {
+        obj.ClearAliasIpPool()
+        obj.alias_ip_pool_refs = make([]contrail.Reference, len(refList))
+        for i, pair := range refList {
+                obj.alias_ip_pool_refs[i] = contrail.Reference {
+                        pair.Object.GetFQName(),
+                        pair.Object.GetUuid(),
+                        pair.Object.GetHref(),
+                        pair.Attribute,
+                }
+        }
+}
+
+
 func (obj *Project) readFloatingIpBackRefs() error {
         if !obj.IsTransient() &&
                 (obj.valid & project_floating_ip_back_refs == 0) {
@@ -602,6 +922,26 @@ func (obj *Project) GetFloatingIpBackRefs() (
         return obj.floating_ip_back_refs, nil
 }
 
+func (obj *Project) readAliasIpBackRefs() error {
+        if !obj.IsTransient() &&
+                (obj.valid & project_alias_ip_back_refs == 0) {
+                err := obj.GetField(obj, "alias_ip_back_refs")
+                if err != nil {
+                        return err
+                }
+        }
+        return nil
+}
+
+func (obj *Project) GetAliasIpBackRefs() (
+        contrail.ReferenceList, error) {
+        err := obj.readAliasIpBackRefs()
+        if err != nil {
+                return nil, err
+        }
+        return obj.alias_ip_back_refs, nil
+}
+
 func (obj *Project) MarshalJSON() ([]byte, error) {
         msg := map[string]*json.RawMessage {
         }
@@ -619,6 +959,15 @@ func (obj *Project) MarshalJSON() ([]byte, error) {
                 msg["quota"] = &value
         }
 
+        if obj.modified & project_alarm_enable != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.alarm_enable)
+                if err != nil {
+                        return nil, err
+                }
+                msg["alarm_enable"] = &value
+        }
+
         if obj.modified & project_id_perms != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.id_perms)
@@ -626,6 +975,24 @@ func (obj *Project) MarshalJSON() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & project_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & project_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & project_display_name != 0 {
@@ -655,6 +1022,15 @@ func (obj *Project) MarshalJSON() ([]byte, error) {
                 msg["floating_ip_pool_refs"] = &value
         }
 
+        if len(obj.alias_ip_pool_refs) > 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.alias_ip_pool_refs)
+                if err != nil {
+                        return nil, err
+                }
+                msg["alias_ip_pool_refs"] = &value
+        }
+
         return json.Marshal(msg)
 }
 
@@ -676,16 +1052,40 @@ func (obj *Project) UnmarshalJSON(body []byte) error {
                                 obj.valid |= project_quota
                         }
                         break
+                case "alarm_enable":
+                        err = json.Unmarshal(value, &obj.alarm_enable)
+                        if err == nil {
+                                obj.valid |= project_alarm_enable
+                        }
+                        break
                 case "id_perms":
                         err = json.Unmarshal(value, &obj.id_perms)
                         if err == nil {
                                 obj.valid |= project_id_perms
                         }
                         break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= project_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= project_annotations
+                        }
+                        break
                 case "display_name":
                         err = json.Unmarshal(value, &obj.display_name)
                         if err == nil {
                                 obj.valid |= project_display_name
+                        }
+                        break
+                case "security_logging_objects":
+                        err = json.Unmarshal(value, &obj.security_logging_objects)
+                        if err == nil {
+                                obj.valid |= project_security_logging_objects
                         }
                         break
                 case "security_groups":
@@ -700,16 +1100,10 @@ func (obj *Project) UnmarshalJSON(body []byte) error {
                                 obj.valid |= project_virtual_networks
                         }
                         break
-                case "qos_queues":
-                        err = json.Unmarshal(value, &obj.qos_queues)
+                case "qos_configs":
+                        err = json.Unmarshal(value, &obj.qos_configs)
                         if err == nil {
-                                obj.valid |= project_qos_queues
-                        }
-                        break
-                case "qos_forwarding_classs":
-                        err = json.Unmarshal(value, &obj.qos_forwarding_classs)
-                        if err == nil {
-                                obj.valid |= project_qos_forwarding_classs
+                                obj.valid |= project_qos_configs
                         }
                         break
                 case "network_ipams":
@@ -736,10 +1130,40 @@ func (obj *Project) UnmarshalJSON(body []byte) error {
                                 obj.valid |= project_floating_ip_pool_refs
                         }
                         break
+                case "alias_ip_pool_refs":
+                        err = json.Unmarshal(value, &obj.alias_ip_pool_refs)
+                        if err == nil {
+                                obj.valid |= project_alias_ip_pool_refs
+                        }
+                        break
+                case "bgp_as_a_services":
+                        err = json.Unmarshal(value, &obj.bgp_as_a_services)
+                        if err == nil {
+                                obj.valid |= project_bgp_as_a_services
+                        }
+                        break
+                case "routing_policys":
+                        err = json.Unmarshal(value, &obj.routing_policys)
+                        if err == nil {
+                                obj.valid |= project_routing_policys
+                        }
+                        break
+                case "route_aggregates":
+                        err = json.Unmarshal(value, &obj.route_aggregates)
+                        if err == nil {
+                                obj.valid |= project_route_aggregates
+                        }
+                        break
                 case "service_instances":
                         err = json.Unmarshal(value, &obj.service_instances)
                         if err == nil {
                                 obj.valid |= project_service_instances
+                        }
+                        break
+                case "service_health_checks":
+                        err = json.Unmarshal(value, &obj.service_health_checks)
+                        if err == nil {
+                                obj.valid |= project_service_health_checks
                         }
                         break
                 case "route_tables":
@@ -760,6 +1184,12 @@ func (obj *Project) UnmarshalJSON(body []byte) error {
                                 obj.valid |= project_logical_routers
                         }
                         break
+                case "api_access_lists":
+                        err = json.Unmarshal(value, &obj.api_access_lists)
+                        if err == nil {
+                                obj.valid |= project_api_access_lists
+                        }
+                        break
                 case "loadbalancer_pools":
                         err = json.Unmarshal(value, &obj.loadbalancer_pools)
                         if err == nil {
@@ -778,10 +1208,40 @@ func (obj *Project) UnmarshalJSON(body []byte) error {
                                 obj.valid |= project_virtual_ips
                         }
                         break
+                case "loadbalancer_listeners":
+                        err = json.Unmarshal(value, &obj.loadbalancer_listeners)
+                        if err == nil {
+                                obj.valid |= project_loadbalancer_listeners
+                        }
+                        break
+                case "loadbalancers":
+                        err = json.Unmarshal(value, &obj.loadbalancers)
+                        if err == nil {
+                                obj.valid |= project_loadbalancers
+                        }
+                        break
+                case "bgpvpns":
+                        err = json.Unmarshal(value, &obj.bgpvpns)
+                        if err == nil {
+                                obj.valid |= project_bgpvpns
+                        }
+                        break
+                case "alarms":
+                        err = json.Unmarshal(value, &obj.alarms)
+                        if err == nil {
+                                obj.valid |= project_alarms
+                        }
+                        break
                 case "floating_ip_back_refs":
                         err = json.Unmarshal(value, &obj.floating_ip_back_refs)
                         if err == nil {
                                 obj.valid |= project_floating_ip_back_refs
+                        }
+                        break
+                case "alias_ip_back_refs":
+                        err = json.Unmarshal(value, &obj.alias_ip_back_refs)
+                        if err == nil {
+                                obj.valid |= project_alias_ip_back_refs
                         }
                         break
                 case "namespace_refs": {
@@ -834,6 +1294,15 @@ func (obj *Project) UpdateObject() ([]byte, error) {
                 msg["quota"] = &value
         }
 
+        if obj.modified & project_alarm_enable != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.alarm_enable)
+                if err != nil {
+                        return nil, err
+                }
+                msg["alarm_enable"] = &value
+        }
+
         if obj.modified & project_id_perms != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.id_perms)
@@ -841,6 +1310,24 @@ func (obj *Project) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & project_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & project_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & project_display_name != 0 {
@@ -892,6 +1379,26 @@ func (obj *Project) UpdateObject() ([]byte, error) {
         }
 
 
+        if obj.modified & project_alias_ip_pool_refs != 0 {
+                if len(obj.alias_ip_pool_refs) == 0 {
+                        var value json.RawMessage
+                        value, err := json.Marshal(
+                                          make([]contrail.Reference, 0))
+                        if err != nil {
+                                return nil, err
+                        }
+                        msg["alias_ip_pool_refs"] = &value
+                } else if !obj.hasReferenceBase("alias-ip-pool") {
+                        var value json.RawMessage
+                        value, err := json.Marshal(&obj.alias_ip_pool_refs)
+                        if err != nil {
+                                return nil, err
+                        }
+                        msg["alias_ip_pool_refs"] = &value
+                }
+        }
+
+
         return json.Marshal(msg)
 }
 
@@ -916,6 +1423,18 @@ func (obj *Project) UpdateReferences() error {
                         obj, "floating-ip-pool",
                         obj.floating_ip_pool_refs,
                         obj.baseMap["floating-ip-pool"])
+                if err != nil {
+                        return err
+                }
+        }
+
+        if (obj.modified & project_alias_ip_pool_refs != 0) &&
+           len(obj.alias_ip_pool_refs) > 0 &&
+           obj.hasReferenceBase("alias-ip-pool") {
+                err := obj.UpdateReference(
+                        obj, "alias-ip-pool",
+                        obj.alias_ip_pool_refs,
+                        obj.baseMap["alias-ip-pool"])
                 if err != nil {
                         return err
                 }

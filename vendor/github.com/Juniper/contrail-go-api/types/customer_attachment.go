@@ -12,6 +12,8 @@ import (
 
 const (
 	customer_attachment_id_perms uint64 = 1 << iota
+	customer_attachment_perms2
+	customer_attachment_annotations
 	customer_attachment_display_name
 	customer_attachment_virtual_machine_interface_refs
 	customer_attachment_floating_ip_refs
@@ -20,6 +22,8 @@ const (
 type CustomerAttachment struct {
         contrail.ObjectBase
 	id_perms IdPermsType
+	perms2 PermType2
+	annotations KeyValuePairs
 	display_name string
 	virtual_machine_interface_refs contrail.ReferenceList
 	floating_ip_refs contrail.ReferenceList
@@ -80,6 +84,24 @@ func (obj *CustomerAttachment) GetIdPerms() IdPermsType {
 func (obj *CustomerAttachment) SetIdPerms(value *IdPermsType) {
         obj.id_perms = *value
         obj.modified |= customer_attachment_id_perms
+}
+
+func (obj *CustomerAttachment) GetPerms2() PermType2 {
+        return obj.perms2
+}
+
+func (obj *CustomerAttachment) SetPerms2(value *PermType2) {
+        obj.perms2 = *value
+        obj.modified |= customer_attachment_perms2
+}
+
+func (obj *CustomerAttachment) GetAnnotations() KeyValuePairs {
+        return obj.annotations
+}
+
+func (obj *CustomerAttachment) SetAnnotations(value *KeyValuePairs) {
+        obj.annotations = *value
+        obj.modified |= customer_attachment_annotations
 }
 
 func (obj *CustomerAttachment) GetDisplayName() string {
@@ -278,6 +300,24 @@ func (obj *CustomerAttachment) MarshalJSON() ([]byte, error) {
                 msg["id_perms"] = &value
         }
 
+        if obj.modified & customer_attachment_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & customer_attachment_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
+        }
+
         if obj.modified & customer_attachment_display_name != 0 {
                 var value json.RawMessage
                 value, err := json.Marshal(&obj.display_name)
@@ -326,6 +366,18 @@ func (obj *CustomerAttachment) UnmarshalJSON(body []byte) error {
                                 obj.valid |= customer_attachment_id_perms
                         }
                         break
+                case "perms2":
+                        err = json.Unmarshal(value, &obj.perms2)
+                        if err == nil {
+                                obj.valid |= customer_attachment_perms2
+                        }
+                        break
+                case "annotations":
+                        err = json.Unmarshal(value, &obj.annotations)
+                        if err == nil {
+                                obj.valid |= customer_attachment_annotations
+                        }
+                        break
                 case "display_name":
                         err = json.Unmarshal(value, &obj.display_name)
                         if err == nil {
@@ -367,6 +419,24 @@ func (obj *CustomerAttachment) UpdateObject() ([]byte, error) {
                         return nil, err
                 }
                 msg["id_perms"] = &value
+        }
+
+        if obj.modified & customer_attachment_perms2 != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.perms2)
+                if err != nil {
+                        return nil, err
+                }
+                msg["perms2"] = &value
+        }
+
+        if obj.modified & customer_attachment_annotations != 0 {
+                var value json.RawMessage
+                value, err := json.Marshal(&obj.annotations)
+                if err != nil {
+                        return nil, err
+                }
+                msg["annotations"] = &value
         }
 
         if obj.modified & customer_attachment_display_name != 0 {
