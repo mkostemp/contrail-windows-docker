@@ -808,8 +808,10 @@ func deleteTheOnlyHNSEndpoint(d *ContrailDriver) {
 func getTheOnlyHNSEndpoint(d *ContrailDriver) (*hcsshim.HNSEndpoint, string) {
 	hnsNets, err := contrailDriver.hnsMgr.ListNetworks()
 	Expect(err).ToNot(HaveOccurred())
+	Expect(hnsNets).To(HaveLen(1))
 	eps, err := hns.ListHNSEndpointsOfNetwork(hnsNets[0].Id)
 	Expect(err).ToNot(HaveOccurred())
+	Expect(eps).To(HaveLen(1))
 	hnsEndpointID := eps[0].Id
 	hnsEndpoint, err := hns.GetHNSEndpoint(hnsEndpointID)
 	Expect(err).ToNot(HaveOccurred())
