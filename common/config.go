@@ -14,6 +14,10 @@ const (
 
 	// HNSNetworkPrefix is a prefix given too all HNS network names managed by the driver
 	HNSNetworkPrefix = "Contrail"
+
+	// RootNetworkName is a name of root HNS network created solely for the purpose of
+	// having a virtual switch
+	RootNetworkName = "ContrailRootNetwork"
 )
 
 // PluginSpecDir returns path to directory where docker daemon looks for plugin spec files.

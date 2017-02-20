@@ -2,6 +2,7 @@ package hns
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/Microsoft/hcsshim"
 	log "github.com/Sirupsen/logrus"
@@ -20,6 +21,9 @@ func CreateHNSNetwork(configuration *hcsshim.HNSNetwork) (string, error) {
 		log.Errorln(err)
 		return "", err
 	}
+	// Annoying HNS issue, sleep as a workaround.
+	// https://github.com/Microsoft/hcsshim/issues/108
+	time.Sleep(time.Second * 2)
 	return response.Id, nil
 }
 

@@ -51,6 +51,11 @@ func NewDriver(adapter string, c *controller.Controller) *ContrailDriver {
 
 func (d *ContrailDriver) StartServing() error {
 
+	err := d.createRootNetwork()
+	if err != nil {
+		return err
+	}
+
 	pipeConfig := winio.PipeConfig{
 		// This will set permissions for Service, System, Adminstrator group and account to
 		// have full access
@@ -60,7 +65,6 @@ func (d *ContrailDriver) StartServing() error {
 		OutputBufferSize:   4096,
 	}
 
-	var err error
 	pipeAddr := "//./pipe/" + common.DriverName
 	if d.listener, err = winio.ListenPipe(pipeAddr, &pipeConfig); err != nil {
 		return err
@@ -83,6 +87,37 @@ func (d *ContrailDriver) StartServing() error {
 
 	log.Infoln("Started serving on ", pipeAddr)
 
+	return nil
+}
+
+func (d *ContrailDriver) createRootNetwork() error {
+	rootNetwork, err := hns.GetHNSNetworkByName(common.RootNetworkName)
+	if err != nil {
+		return err
+	}
+	if rootNetwork == nil {
+
+		subnets := []hcsshim.Subnet{
+			{
+				AddressPrefix:  "0.0.0.0/24",
+				GatewayAddress: "0.0.0.0",
+			},
+		}
+		configuration := &hcsshim.HNSNetwork{
+			Name:               common.RootNetworkName,
+			Type:               "transparent",
+			NetworkAdapterName: d.networkAdapter,
+			Subnets:            subnets,
+		}
+		rootNetID, err := hns.CreateHNSNetwork(configuration)
+		if err != nil {
+			return err
+		}
+
+		log.Infoln("Created root HNS network:", rootNetID)
+	} else {
+		log.Infoln("Existing root HNS network found:", rootNetwork.Id)
+	}
 	return nil
 }
 
