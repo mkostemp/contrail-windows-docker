@@ -36,17 +36,14 @@ node('windows-server-2016') {
                 dir("contrail-windows-docker"){
                   stage 'checkout'
                   checkout scm
-                  stage 'clean'
-                  bat script: "go clean -i -r -x "
                   stage 'prepare deps'
                   bat script: "go get -u github.com/docker/docker/client"
                   bat script: "go get -u github.com/docker/docker/api/types"
-                  // bat script: "go list ."
-                  // bat script: "go get -t -u -d ./... "
-
                   bat script: "go get -u github.com/onsi/ginkgo/ginkgo"
                   bat script: "go get -u github.com/onsi/gomega"
                   bat script: "go get -u github.com/onsi/ginkgo/extensions/table"
+                  stage 'clean'
+                  bat script: "go clean -i -r "
                   stage 'build'
                   bat script: "go build -i -v"
                   stage 'test'
