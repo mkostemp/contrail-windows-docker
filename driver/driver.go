@@ -51,8 +51,11 @@ func NewDriver(adapter string, c *controller.Controller) *ContrailDriver {
 
 func (d *ContrailDriver) StartServing() error {
 
-	err := d.createRootNetwork()
-	if err != nil {
+	if err := d.createRootNetwork(); err != nil {
+		return err
+	}
+
+	if err := common.EnableHyperVExtension(d.networkAdapter); err != nil {
 		return err
 	}
 
@@ -66,6 +69,7 @@ func (d *ContrailDriver) StartServing() error {
 	}
 
 	pipeAddr := "//./pipe/" + common.DriverName
+	var err error
 	if d.listener, err = winio.ListenPipe(pipeAddr, &pipeConfig); err != nil {
 		return err
 	}

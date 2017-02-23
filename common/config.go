@@ -18,6 +18,9 @@ const (
 	// RootNetworkName is a name of root HNS network created solely for the purpose of
 	// having a virtual switch
 	RootNetworkName = "ContrailRootNetwork"
+
+	// HyperVExtensionName is the name of vRouter Hyper-V Extension
+	HyperVExtensionName = "vRouter forwarding extension"
 )
 
 // PluginSpecDir returns path to directory where docker daemon looks for plugin spec files.
