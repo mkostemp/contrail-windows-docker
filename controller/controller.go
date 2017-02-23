@@ -111,7 +111,8 @@ func (c *Controller) GetDefaultGatewayIp(net *types.VirtualNetwork) (string, err
 	return gw, nil
 }
 
-func (c *Controller) GetOrCreateInstance(tenantName, containerId string) (*types.VirtualMachine, error) {
+func (c *Controller) GetOrCreateInstance(vif *types.VirtualMachineInterface, containerId string) (
+	*types.VirtualMachine, error) {
 	instance, err := types.VirtualMachineByName(c.ApiClient, containerId)
 	if err == nil && instance != nil {
 		return instance, nil
@@ -130,24 +131,33 @@ func (c *Controller) GetOrCreateInstance(tenantName, containerId string) (*types
 		log.Errorf("Failed to retreive instance %s by name: %v", containerId, err)
 		return nil, err
 	}
+	log.Infoln("Created instance: ", createdInstance.GetFQName())
+
+	err = vif.AddVirtualMachine(createdInstance)
+	if err != nil {
+		log.Errorf("Failed to add instance to vif")
+		return nil, err
+	}
+	err = c.ApiClient.Update(vif)
+	if err != nil {
+		log.Errorf("Failed to update vif")
+		return nil, err
+	}
+
 	return createdInstance, nil
 }
 
-func (c *Controller) GetOrCreateInterface(net *types.VirtualNetwork,
-	instance *types.VirtualMachine) (*types.VirtualMachineInterface, error) {
-	iface, err := types.VirtualMachineInterfaceByName(c.ApiClient, instance.GetName())
+func (c *Controller) GetOrCreateInterface(net *types.VirtualNetwork, tenantName,
+	containerId string) (*types.VirtualMachineInterface, error) {
+
+	fqName := fmt.Sprintf("%s:%s:%s", common.DomainName, tenantName, containerId)
+	iface, err := types.VirtualMachineInterfaceByName(c.ApiClient, fqName)
 	if err == nil && iface != nil {
 		return iface, nil
 	}
 
 	iface = new(types.VirtualMachineInterface)
-	instanceFQName := instance.GetFQName()
-	iface.SetFQName("", instanceFQName)
-	err = iface.AddVirtualMachine(instance)
-	if err != nil {
-		log.Errorf("Failed to add vm to interface: %v", err)
-		return nil, err
-	}
+	iface.SetFQName("project", []string{common.DomainName, tenantName, containerId})
 	err = iface.AddVirtualNetwork(net)
 	if err != nil {
 		log.Errorf("Failed to add network to interface: %v", err)
@@ -159,11 +169,12 @@ func (c *Controller) GetOrCreateInterface(net *types.VirtualNetwork,
 		return nil, err
 	}
 
-	createdIface, err := types.VirtualMachineInterfaceByName(c.ApiClient, instance.GetName())
+	createdIface, err := types.VirtualMachineInterfaceByName(c.ApiClient, fqName)
 	if err != nil {
-		log.Errorf("Failed to retreive vmi %s by name: %v", instance.GetName(), err)
+		log.Errorf("Failed to retreive vmi %s by name: %v", fqName, err)
 		return nil, err
 	}
+	log.Infoln("Created instance: ", createdIface.GetFQName())
 	return createdIface, nil
 }
 

@@ -100,23 +100,31 @@ func AddSubnetWithDefaultGateway(c contrail.ApiClient, subnetPrefix, defaultGW s
 	Expect(err).ToNot(HaveOccurred())
 }
 
-func CreateMockedInstance(c contrail.ApiClient, tenantName,
+func CreateMockedInstance(c contrail.ApiClient, vif *types.VirtualMachineInterface,
 	containerID string) *types.VirtualMachine {
 	testInstance := new(types.VirtualMachine)
 	testInstance.SetName(containerID)
 	err := c.Create(testInstance)
 	Expect(err).ToNot(HaveOccurred())
+
+	createdInstance, err := c.FindByName("virtual-machine", containerID)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = vif.AddVirtualMachine(createdInstance.(*types.VirtualMachine))
+	Expect(err).ToNot(HaveOccurred())
+	err = c.Update(vif)
+	Expect(err).ToNot(HaveOccurred())
+
 	return testInstance
 }
 
-func CreateMockedInterface(c contrail.ApiClient, instance *types.VirtualMachine,
-	net *types.VirtualNetwork) *types.VirtualMachineInterface {
+func CreateMockedInterface(c contrail.ApiClient, net *types.VirtualNetwork, tenantName,
+	containerId string) *types.VirtualMachineInterface {
 	iface := new(types.VirtualMachineInterface)
-	instanceFQName := instance.GetFQName()
-	iface.SetFQName("", instanceFQName)
-	err := iface.AddVirtualMachine(instance)
-	Expect(err).ToNot(HaveOccurred())
-	err = iface.AddVirtualNetwork(net)
+
+	iface.SetFQName("project", []string{common.DomainName, tenantName, containerId})
+
+	err := iface.AddVirtualNetwork(net)
 	Expect(err).ToNot(HaveOccurred())
 	err = c.Create(iface)
 	Expect(err).ToNot(HaveOccurred())

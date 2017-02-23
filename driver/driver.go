@@ -14,6 +14,7 @@ import (
 
 	"context"
 
+	"github.com/Juniper/contrail-go-api/types"
 	"github.com/Microsoft/go-winio"
 	"github.com/Microsoft/hcsshim"
 	log "github.com/Sirupsen/logrus"
@@ -291,12 +292,13 @@ func (d *ContrailDriver) CreateEndpoint(req *network.CreateEndpointRequest) (*ne
 	// containerID := req.Options["vmname"]
 	containerID := req.EndpointID
 
-	contrailInstance, err := d.controller.GetOrCreateInstance(meta.tenant, containerID)
+	contrailVif, err := d.controller.GetOrCreateInterface(contrailNetwork, meta.tenant,
+		containerID)
 	if err != nil {
 		return nil, err
 	}
 
-	contrailVif, err := d.controller.GetOrCreateInterface(contrailNetwork, contrailInstance)
+	_, err = d.controller.GetOrCreateInstance(contrailVif, containerID)
 	if err != nil {
 		return nil, err
 	}
@@ -363,17 +365,12 @@ func (d *ContrailDriver) DeleteEndpoint(req *network.DeleteEndpointRequest) erro
 	log.Debugln("=== DeleteEndpoint")
 	log.Debugln(req)
 
-	meta, err := d.networkMetaFromDockerNetwork(req.NetworkID)
-	if err != nil {
-		return err
-	}
-
 	// TODO JW-187.
 	// We need something like:
 	// containerID := req.Options["vmname"]
 	containerID := req.EndpointID
 
-	contrailInstance, err := d.controller.GetOrCreateInstance(meta.tenant, containerID)
+	contrailInstance, err := types.VirtualMachineByName(d.controller.ApiClient, containerID)
 	if err != nil {
 		log.Warn("When handling DeleteEndpoint, Contrail vm instance wasn't found")
 	} else {

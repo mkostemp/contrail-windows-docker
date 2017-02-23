@@ -354,12 +354,7 @@ var _ = Describe("On requests from docker daemon", func() {
 			dockerNetID := ""
 
 			BeforeEach(func() {
-				_ = createContrailNetwork(contrailController)
-				dockerNetID = createValidDockerNetwork(docker)
-
-				var err error
-				containerID, err = runDockerContainer(docker)
-				Expect(err).ToNot(HaveOccurred())
+				_, dockerNetID, containerID = setupNetworksAndEndpoints(contrailController, docker)
 			})
 			It("allocates Contrail resources", func() {
 				net, err := types.VirtualNetworkByName(contrailController.ApiClient,
@@ -377,8 +372,9 @@ var _ = Describe("On requests from docker daemon", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(inst).ToNot(BeNil())
 
-				vif, err := types.VirtualMachineInterfaceByName(
-					contrailController.ApiClient, inst.GetName())
+				vifFQName := fmt.Sprintf("%s:%s:%s", common.DomainName, tenantName, vmName)
+				vif, err := types.VirtualMachineInterfaceByName(contrailController.ApiClient,
+					vifFQName)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(vif).ToNot(BeNil())
 
@@ -448,6 +444,7 @@ var _ = Describe("On requests from docker daemon", func() {
 		dockerNetID := ""
 		containerID := ""
 		hnsEndpointID := ""
+		vmName := ""
 		var contrailInst *types.VirtualMachine
 		var contrailVif *types.VirtualMachineInterface
 		var contrailIP *types.InstanceIp
@@ -458,22 +455,21 @@ var _ = Describe("On requests from docker daemon", func() {
 
 			// TODO JW-187. For now, VM name is the same as Endpoint ID, not
 			// Container ID
-			dockerNet, err := docker.NetworkInspect(context.Background(),
-				dockerNetID)
+			dockerNet, err := docker.NetworkInspect(context.Background(), dockerNetID)
 			Expect(err).ToNot(HaveOccurred())
-			vmName := dockerNet.Containers[containerID].EndpointID
+			vmName = dockerNet.Containers[containerID].EndpointID
 
 			contrailInst, err = types.VirtualMachineByName(contrailController.ApiClient, vmName)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(contrailInst).ToNot(BeNil())
 
-			contrailVif, err = types.VirtualMachineInterfaceByName(
-				contrailController.ApiClient, contrailInst.GetName())
+			vifFQName := fmt.Sprintf("%s:%s:%s", common.DomainName, tenantName, vmName)
+			contrailVif, err = types.VirtualMachineInterfaceByName(contrailController.ApiClient,
+				vifFQName)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(contrailVif).ToNot(BeNil())
 
-			contrailIP, err = types.InstanceIpByName(contrailController.ApiClient,
-				contrailVif.GetName())
+			contrailIP, err = types.InstanceIpByName(contrailController.ApiClient, vmName)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(contrailIP).ToNot(BeNil())
 		})
@@ -491,11 +487,11 @@ var _ = Describe("On requests from docker daemon", func() {
 
 		assertRemovesContrailVM := func() {
 			_, err := types.VirtualMachineByName(contrailController.ApiClient,
-				contrailInst.GetName())
+				vmName)
 			Expect(err).To(HaveOccurred())
 
 			_, err = types.VirtualMachineInterfaceByName(contrailController.ApiClient,
-				contrailInst.GetName())
+				fmt.Sprintf("%s:%s:%s", common.DomainName, tenantName, vmName))
 			Expect(err).To(HaveOccurred())
 
 			_, err = types.InstanceIpByName(contrailController.ApiClient,
