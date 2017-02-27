@@ -10,20 +10,27 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+func callPowershell(cmds ...string) error {
+	c := []string{"-NonInteractive"}
+	for _, cmd := range cmds {
+		c = append(c, cmd)
+	}
+	return exec.Command("powershell", c...).Run()
+}
+
 func HardResetHNS() error {
 	log.Infoln("Resetting HNS")
 	log.Debugln("Removing NAT")
-	if err := exec.Command("powershell", "Get-NetNat", "|",
-		"Remove-NetNat").Run(); err != nil {
+	if err := callPowershell("Get-NetNat", "|", "Remove-NetNat"); err != nil {
 		log.Debugln("Could not remove nat network.")
 	}
 	log.Debugln("Removing container networks")
-	if err := exec.Command("powershell", "Get-ContainerNetwork", "|",
-		"Remove-ContainerNetwork", "-Force").Run(); err != nil {
+	if err := callPowershell("Get-ContainerNetwork", "|", "Remove-ContainerNetwork",
+		"-Force"); err != nil {
 		log.Debugln("Could not remove container network.")
 	}
 	log.Debugln("Stopping HNS")
-	if err := exec.Command("powershell", "Stop-Service", "hns").Run(); err != nil {
+	if err := callPowershell("Stop-Service", "hns"); err != nil {
 		log.Debugln("HNS is already stopped.")
 	}
 	log.Debugln("Removing HNS program data")
@@ -33,11 +40,11 @@ func HardResetHNS() error {
 		return errors.New("Invalid program data env variable")
 	}
 	hnsDataDir := filepath.Join(programData, "Microsoft", "Windows", "HNS", "HNS.data")
-	if err := exec.Command("powershell", "Remove-Item", hnsDataDir).Run(); err != nil {
+	if err := callPowershell("Remove-Item", hnsDataDir); err != nil {
 		return errors.New(fmt.Sprintf("Error during removing HNS program data: %s", err))
 	}
 	log.Debugln("Starting HNS")
-	if err := exec.Command("powershell", "Start-Service", "hns").Run(); err != nil {
+	if err := callPowershell("Start-Service", "hns"); err != nil {
 		return errors.New(fmt.Sprintf("Error when starting HNS: %s", err))
 	}
 	return nil
@@ -45,7 +52,7 @@ func HardResetHNS() error {
 
 func RestartDocker() error {
 	log.Infoln("Restarting docker")
-	if err := exec.Command("powershell", "Restart-Service", "docker").Run(); err != nil {
+	if err := callPowershell("Restart-Service", "docker"); err != nil {
 		return err
 	}
 	return nil
