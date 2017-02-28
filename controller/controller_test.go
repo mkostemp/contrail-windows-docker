@@ -10,6 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 )
 
@@ -29,7 +30,9 @@ func init() {
 
 func TestController(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Controller client test suite")
+	junitReporter := reporters.NewJUnitReporter("controller_junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Controller client test suite",
+		[]Reporter{junitReporter})
 }
 
 const (

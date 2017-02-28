@@ -13,6 +13,7 @@ import (
 	"github.com/codilime/contrail-windows-docker/common"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 )
 
@@ -35,7 +36,8 @@ func init() {
 
 func TestHNS(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "HNS wrapper test suite")
+	junitReporter := reporters.NewJUnitReporter("controller_junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "HNS wrapper test suite", []Reporter{junitReporter})
 }
 
 var _ = BeforeSuite(func() {
