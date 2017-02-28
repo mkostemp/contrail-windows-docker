@@ -7,10 +7,10 @@ import (
 
 	"github.com/codilime/contrail-windows-docker/common"
 	"github.com/codilime/contrail-windows-docker/hns"
-	log "github.com/sirupsen/logrus"
-
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
+	log "github.com/sirupsen/logrus"
 )
 
 var netAdapter string
@@ -22,7 +22,8 @@ func init() {
 
 func TestHNSManager(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "HNS manager test suite")
+	junitReporter := reporters.NewJUnitReporter("hns_manager_junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "HNS manager test suite", []Reporter{junitReporter})
 }
 
 var _ = BeforeSuite(func() {

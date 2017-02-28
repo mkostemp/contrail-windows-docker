@@ -25,6 +25,7 @@ import (
 	"github.com/docker/go-plugins-helpers/network"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 )
 
@@ -47,7 +48,9 @@ func init() {
 
 func TestDriver(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Contrail Network Driver test suite")
+	junitReporter := reporters.NewJUnitReporter("driver_junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Contrail Network Driver test suite",
+		[]Reporter{junitReporter})
 }
 
 var _ = BeforeSuite(func() {
