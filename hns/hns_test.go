@@ -36,7 +36,7 @@ func init() {
 
 func TestHNS(t *testing.T) {
 	RegisterFailHandler(Fail)
-	junitReporter := reporters.NewJUnitReporter("controller_junit.xml")
+	junitReporter := reporters.NewJUnitReporter("hns_junit.xml")
 	RunSpecsWithDefaultAndCustomReporters(t, "HNS wrapper test suite", []Reporter{junitReporter})
 }
 

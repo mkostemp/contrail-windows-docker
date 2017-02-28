@@ -22,7 +22,7 @@ func init() {
 
 func TestHNSManager(t *testing.T) {
 	RegisterFailHandler(Fail)
-	junitReporter := reporters.NewJUnitReporter("controller_junit.xml")
+	junitReporter := reporters.NewJUnitReporter("hns_manager_junit.xml")
 	RunSpecsWithDefaultAndCustomReporters(t, "HNS manager test suite", []Reporter{junitReporter})
 }
 
