@@ -8,6 +8,7 @@ import (
 	"github.com/Juniper/contrail-go-api/types"
 	log "github.com/Sirupsen/logrus"
 
+	"github.com/codilime/contrail-windows-docker/common"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	"github.com/onsi/ginkgo/reporters"
@@ -78,8 +79,9 @@ var _ = Describe("Controller", func() {
 		// to VMI
 		testNetwork := CreateMockedNetworkWithSubnet(client.ApiClient, networkName, subnetCIDR,
 			project)
-		testInstance := CreateMockedInstance(client.ApiClient, tenantName, containerID)
-		testInterface := CreateMockedInterface(client.ApiClient, testInstance, testNetwork)
+		testInterface := CreateMockedInterface(client.ApiClient, testNetwork, tenantName,
+			containerID)
+		_ = CreateMockedInstance(client.ApiClient, testInterface, containerID)
 		_ = CreateMockedInstanceIP(client.ApiClient, tenantName, testInterface,
 			testNetwork)
 
@@ -94,8 +96,9 @@ var _ = Describe("Controller", func() {
 	Specify("recursive deletion removes elements down the ref tree", func() {
 		testNetwork := CreateMockedNetworkWithSubnet(client.ApiClient, networkName, subnetCIDR,
 			project)
-		testInstance := CreateMockedInstance(client.ApiClient, tenantName, containerID)
-		testInterface := CreateMockedInterface(client.ApiClient, testInstance, testNetwork)
+		testInterface := CreateMockedInterface(client.ApiClient, testNetwork, tenantName,
+			containerID)
+		testInstance := CreateMockedInstance(client.ApiClient, testInterface, containerID)
 		testInstanceIP := CreateMockedInstanceIP(client.ApiClient, tenantName, testInterface,
 			testNetwork)
 
@@ -197,57 +200,35 @@ var _ = Describe("Controller", func() {
 		})
 	})
 
-	Describe("getting Contrail instance", func() {
-		Context("when instance already exists in Contrail", func() {
-			var testInstance *types.VirtualMachine
-			BeforeEach(func() {
-				testInstance = CreateMockedInstance(client.ApiClient, tenantName, containerID)
-			})
-			It("returns existing instance", func() {
-				instance, err := client.GetOrCreateInstance(tenantName, containerID)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(instance).ToNot(BeNil())
-				Expect(instance.GetUuid()).To(Equal(testInstance.GetUuid()))
-			})
-		})
-		Context("when instance doesn't exist in Contrail", func() {
-			It("creates a new instance", func() {
-				instance, err := client.GetOrCreateInstance(tenantName, containerID)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(instance).ToNot(BeNil())
-
-				existingInst, err := types.VirtualMachineByUuid(client.ApiClient,
-					instance.GetUuid())
-				Expect(err).ToNot(HaveOccurred())
-				Expect(existingInst.GetUuid()).To(Equal(instance.GetUuid()))
-			})
-		})
-	})
-
 	Describe("getting Contrail virtual interface", func() {
 		var testNetwork *types.VirtualNetwork
-		var testInstance *types.VirtualMachine
 		BeforeEach(func() {
 			testNetwork = CreateMockedNetworkWithSubnet(client.ApiClient, networkName, subnetCIDR,
 				project)
-			testInstance = CreateMockedInstance(client.ApiClient, tenantName, containerID)
 		})
 		Context("when vif already exists in Contrail", func() {
 			var testInterface *types.VirtualMachineInterface
 			BeforeEach(func() {
-				testInterface = CreateMockedInterface(client.ApiClient, testInstance,
-					testNetwork)
+				testInterface = CreateMockedInterface(client.ApiClient, testNetwork, tenantName,
+					containerID)
 			})
 			It("returns existing vif", func() {
-				iface, err := client.GetOrCreateInterface(testNetwork, testInstance)
+				iface, err := client.GetOrCreateInterface(testNetwork, tenantName, containerID)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(iface).ToNot(BeNil())
 				Expect(iface.GetUuid()).To(Equal(testInterface.GetUuid()))
 			})
+			It("assigns correct FQName to vif", func() {
+				iface, err := client.GetOrCreateInterface(testNetwork, tenantName, containerID)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(iface).ToNot(BeNil())
+				Expect(iface.GetFQName()).To(Equal([]string{common.DomainName, tenantName,
+					containerID}))
+			})
 		})
 		Context("when vif doesn't exist in Contrail", func() {
 			It("creates a new vif", func() {
-				iface, err := client.GetOrCreateInterface(testNetwork, testInstance)
+				iface, err := client.GetOrCreateInterface(testNetwork, tenantName, containerID)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(iface).ToNot(BeNil())
 
@@ -259,16 +240,57 @@ var _ = Describe("Controller", func() {
 		})
 	})
 
-	Describe("getting virtual interface MAC", func() {
-		var testNetwork *types.VirtualNetwork
-		var testInstance *types.VirtualMachine
+	Describe("getting Contrail instance", func() {
 		var testInterface *types.VirtualMachineInterface
 		BeforeEach(func() {
-			testNetwork = CreateMockedNetworkWithSubnet(client.ApiClient, networkName, subnetCIDR,
+			testNetwork := CreateMockedNetworkWithSubnet(client.ApiClient, networkName, subnetCIDR,
 				project)
-			testInstance = CreateMockedInstance(client.ApiClient, tenantName, containerID)
-			testInterface = CreateMockedInterface(client.ApiClient, testInstance,
-				testNetwork)
+			testInterface = CreateMockedInterface(client.ApiClient, testNetwork, tenantName,
+				containerID)
+		})
+		Context("when instance already exists in Contrail", func() {
+			var testInstance *types.VirtualMachine
+			BeforeEach(func() {
+				testInstance = CreateMockedInstance(client.ApiClient, testInterface, containerID)
+			})
+			It("returns existing instance", func() {
+				instance, err := client.GetOrCreateInstance(testInterface, containerID)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(instance).ToNot(BeNil())
+				Expect(instance.GetUuid()).To(Equal(testInstance.GetUuid()))
+			})
+		})
+		Context("when instance doesn't exist in Contrail", func() {
+			It("creates a new instance", func() {
+				instance, err := client.GetOrCreateInstance(testInterface, containerID)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(instance).ToNot(BeNil())
+
+				existingInst, err := types.VirtualMachineByUuid(client.ApiClient,
+					instance.GetUuid())
+				Expect(err).ToNot(HaveOccurred())
+				Expect(existingInst.GetUuid()).To(Equal(instance.GetUuid()))
+			})
+		})
+	})
+
+	Describe("getting virtual interface MAC", func() {
+		var testInterface *types.VirtualMachineInterface
+		BeforeEach(func() {
+			testNetwork := CreateMockedNetworkWithSubnet(client.ApiClient, networkName, subnetCIDR,
+				project)
+			testInterface = CreateMockedInterface(client.ApiClient, testNetwork, tenantName,
+				containerID)
+		})
+		Context("when vif has a VM", func() {
+			BeforeEach(func() {
+				_ = CreateMockedInstance(client.ApiClient, testInterface, containerID)
+			})
+			It("returns MAC address", func() {
+				mac, err := client.GetInterfaceMac(testInterface)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(mac).ToNot(Equal("")) // dunno how to get actual MAC when given Instance
+			})
 		})
 		Context("when vif has MAC", func() {
 			BeforeEach(func() {
@@ -296,9 +318,9 @@ var _ = Describe("Controller", func() {
 		BeforeEach(func() {
 			testNetwork = CreateMockedNetworkWithSubnet(client.ApiClient, networkName, subnetCIDR,
 				project)
-			testInstance = CreateMockedInstance(client.ApiClient, tenantName, containerID)
-			testInterface = CreateMockedInterface(client.ApiClient, testInstance,
-				testNetwork)
+			testInterface = CreateMockedInterface(client.ApiClient, testNetwork, tenantName,
+				containerID)
+			testInstance = CreateMockedInstance(client.ApiClient, testInterface, containerID)
 		})
 		Context("when instance IP already exists in Contrail", func() {
 			var testInstanceIP *types.InstanceIp
