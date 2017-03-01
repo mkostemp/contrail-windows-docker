@@ -25,6 +25,7 @@ func init() {
 	flag.IntVar(&controllerPort, "controllerPort", 8082, "Contrail controller port")
 	flag.BoolVar(&useActualController, "useActualController", true,
 		"Whether to use mocked controller or actual.")
+	// asdf
 
 	log.SetLevel(log.DebugLevel)
 }
